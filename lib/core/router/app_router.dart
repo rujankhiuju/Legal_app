@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/home_page.dart';
 import '../../features/rule_book/rule_book_page.dart';
+import '../../features/rule_book/rule_book_detail_page.dart';
 import '../../features/notes/notes_page.dart';
 import '../../features/calendar/calendar_page.dart';
 import '../../features/more/more_page.dart';
@@ -35,6 +36,17 @@ final appRouter = GoRouter(
               path: '/${RouteNames.ruleBook}',
               name: RouteNames.ruleBook,
               builder: (context, state) => const RuleBookPage(),
+              routes: [
+                GoRoute(
+                  path: ':docId',
+                  name: '${RouteNames.ruleBook}Detail',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) {
+                    final docId = state.pathParameters['docId']!;
+                    return RuleBookDetailPage(docId: docId);
+                  },
+                ),
+              ],
             ),
           ],
         ),
