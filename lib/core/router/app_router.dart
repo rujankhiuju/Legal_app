@@ -11,6 +11,12 @@ import '../../features/calendar/add_hearing_page.dart';
 import '../../features/more/more_page.dart';
 import '../../features/more/settings_page.dart';
 import '../../features/reminders/screen/reminders_page.dart';
+import '../../features/scanner/screen/scanner_screen.dart';
+import '../../features/scanner/screen/edit_scan_screen.dart';
+import '../../features/scanner/screen/pdf_generate_screen.dart';
+import '../../features/scanner/screen/pdf_library_screen.dart';
+import '../../features/scanner/screen/pdf_viewer_screen.dart';
+import '../../features/scanner/model/pdf_document.dart' show PdfDocument;
 import '../../features/shell/app_shell.dart';
 import 'route_names.dart';
 
@@ -113,6 +119,42 @@ final appRouter = GoRouter(
       name: RouteNames.reminders,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const RemindersPage(),
+    ),
+    GoRoute(
+      path: '/${RouteNames.scanner}',
+      name: RouteNames.scanner,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const ScannerScreen(),
+    ),
+    GoRoute(
+      path: '/${RouteNames.editScan}',
+      name: RouteNames.editScan,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final path = state.extra as String;
+        return EditScanScreen(imagePath: path);
+      },
+    ),
+    GoRoute(
+      path: '/${RouteNames.pdfGenerate}',
+      name: RouteNames.pdfGenerate,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const PdfGenerateScreen(),
+    ),
+    GoRoute(
+      path: '/${RouteNames.pdfLibrary}',
+      name: RouteNames.pdfLibrary,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const PdfLibraryScreen(),
+    ),
+    GoRoute(
+      path: '/${RouteNames.pdfViewer}',
+      name: RouteNames.pdfViewer,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final doc = state.extra as PdfDocument;
+        return PdfViewerScreen(doc: doc);
+      },
     ),
   ],
 );

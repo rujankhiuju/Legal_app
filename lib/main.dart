@@ -7,6 +7,7 @@ import 'features/notes/model/case_note.dart';
 import 'features/calendar/model/court_event.dart';
 import 'features/reminders/model/reminder.dart';
 import 'features/reminders/service/notification_service.dart';
+import 'features/scanner/model/pdf_document.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,7 @@ void main() async {
   Hive.registerAdapter(CaseNoteAdapter());
   Hive.registerAdapter(CourtEventAdapter());
   Hive.registerAdapter(ReminderAdapter());
+  Hive.registerAdapter(PdfDocumentAdapter());
   await NotificationService.instance.initialize();
   runApp(
     const ProviderScope(
