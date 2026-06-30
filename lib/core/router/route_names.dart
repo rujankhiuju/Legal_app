@@ -8,4 +8,5 @@ class RouteNames {
   static const more = 'more';
   static const settings = 'settings';
   static const notesEditor = 'notesEditor';
+  static const addHearing = 'addHearing';
 }

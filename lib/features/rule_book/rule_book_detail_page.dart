@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import 'model/legal_document.dart';
@@ -136,6 +137,7 @@ class _DetailContent extends ConsumerWidget {
                       color: AppColors.gold,
                     ),
                     onPressed: () {
+                      HapticFeedback.mediumImpact();
                       ref.read(ruleBookActionsProvider).toggleBookmark(doc);
                     },
                     tooltip: doc.isBookmarked

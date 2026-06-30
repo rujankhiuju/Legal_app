@@ -7,6 +7,7 @@ import '../../features/notes/notes_page.dart';
 import '../../features/notes/note_editor_page.dart';
 import '../../features/notes/model/case_note.dart' show CaseNote;
 import '../../features/calendar/calendar_page.dart';
+import '../../features/calendar/add_hearing_page.dart';
 import '../../features/more/more_page.dart';
 import '../../features/more/settings_page.dart';
 import '../../features/shell/app_shell.dart';
@@ -78,6 +79,14 @@ final appRouter = GoRouter(
               path: '/${RouteNames.calendar}',
               name: RouteNames.calendar,
               builder: (context, state) => const CalendarPage(),
+              routes: [
+                GoRoute(
+                  path: 'add',
+                  name: RouteNames.addHearing,
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) => const AddHearingPage(),
+                ),
+              ],
             ),
           ],
         ),

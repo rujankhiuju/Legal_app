@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/staggered_animation.dart';
 import 'providers/rule_book_provider.dart';
 
 class RuleBookPage extends ConsumerStatefulWidget {
@@ -137,7 +138,10 @@ class _DocumentList extends ConsumerWidget {
             for (final entry in grouped.entries) ...[
               _CategoryHeader(category: entry.key, count: entry.value.length, isDark: isDark),
               for (final doc in entry.value)
-                _DocumentCard(doc: doc, isDark: isDark),
+                StaggeredFadeSlide(
+                  index: entry.value.indexOf(doc),
+                  child: _DocumentCard(doc: doc, isDark: isDark),
+                ),
             ],
           ],
         );

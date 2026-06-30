@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/route_names.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/staggered_animation.dart';
 import 'model/case_note.dart';
 import 'providers/notes_provider.dart';
 
@@ -139,10 +141,13 @@ class _NotesList extends ConsumerWidget {
             if (pinned.isNotEmpty) ...[
               _SectionHeader(title: 'Pinned', isDark: isDark, icon: Icons.push_pin),
               for (final note in pinned)
-                _NoteCard(
-                  note: note,
-                  isDark: isDark,
-                  onTap: () => onOpenEditor(note),
+                StaggeredFadeSlide(
+                  index: pinned.indexOf(note),
+                  child: _NoteCard(
+                    note: note,
+                    isDark: isDark,
+                    onTap: () => onOpenEditor(note),
+                  ),
                 ),
             ],
             _SectionHeader(
@@ -151,10 +156,13 @@ class _NotesList extends ConsumerWidget {
               icon: query.isEmpty ? Icons.history : Icons.search,
             ),
             for (final note in unpinned)
-              _NoteCard(
-                note: note,
-                isDark: isDark,
-                onTap: () => onOpenEditor(note),
+              StaggeredFadeSlide(
+                index: unpinned.indexOf(note),
+                child: _NoteCard(
+                  note: note,
+                  isDark: isDark,
+                  onTap: () => onOpenEditor(note),
+                ),
               ),
           ],
         );
@@ -301,6 +309,7 @@ class _NoteCard extends ConsumerWidget {
         },
         child: GestureDetector(
           onLongPress: () {
+            HapticFeedback.mediumImpact();
             ref.read(notesActionsProvider).togglePin(note);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
