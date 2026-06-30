@@ -7,4 +7,5 @@ class RouteNames {
   static const calendar = 'calendar';
   static const more = 'more';
   static const settings = 'settings';
+  static const notesEditor = 'notesEditor';
 }

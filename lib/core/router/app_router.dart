@@ -4,6 +4,8 @@ import '../../features/home/home_page.dart';
 import '../../features/rule_book/rule_book_page.dart';
 import '../../features/rule_book/rule_book_detail_page.dart';
 import '../../features/notes/notes_page.dart';
+import '../../features/notes/note_editor_page.dart';
+import '../../features/notes/model/case_note.dart' show CaseNote;
 import '../../features/calendar/calendar_page.dart';
 import '../../features/more/more_page.dart';
 import '../../features/more/settings_page.dart';
@@ -56,6 +58,17 @@ final appRouter = GoRouter(
               path: '/${RouteNames.notes}',
               name: RouteNames.notes,
               builder: (context, state) => const NotesPage(),
+              routes: [
+                GoRoute(
+                  path: 'editor',
+                  name: RouteNames.notesEditor,
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) {
+                    final existing = state.extra as CaseNote?;
+                    return NoteEditorPage(existingNote: existing);
+                  },
+                ),
+              ],
             ),
           ],
         ),
