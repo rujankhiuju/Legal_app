@@ -1,0 +1,21 @@
+{
+  "@@locale": "ne",
+  "appTitle": "कानुनी एप",
+  "home": "गृहपृष्ठ",
+  "ruleBook": "नियम पुस्तिका",
+  "notes": "नोटहरू",
+  "calendar": "पात्रो",
+  "more": "थप",
+  "settings": "सेटिङहरू",
+  "language": "भाषा",
+  "english": "अङ्ग्रेजी",
+  "nepali": "नेपाली",
+  "darkMode": "गाढा मोड",
+  "lightMode": "उज्यालो मोड",
+  "homeTitle": "स्वागतम्",
+  "homeSubtitle": "तपाईंको कानुनी साथी एप",
+  "ruleBookTitle": "नियम पुस्तिका",
+  "notesTitle": "नोटहरू",
+  "calendarTitle": "पात्रो",
+  "moreTitle": "थप"
+}

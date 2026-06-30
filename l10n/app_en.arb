@@ -1,0 +1,75 @@
+{
+  "@@locale": "en",
+  "appTitle": "Legal App",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "home": "Home",
+  "@home": {
+    "description": "Home tab label"
+  },
+  "ruleBook": "Rule Book",
+  "@ruleBook": {
+    "description": "Rule Book tab label"
+  },
+  "notes": "Notes",
+  "@notes": {
+    "description": "Notes tab label"
+  },
+  "calendar": "Calendar",
+  "@calendar": {
+    "description": "Calendar tab label"
+  },
+  "more": "More",
+  "@more": {
+    "description": "More tab label"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting label"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  "nepali": "Nepali",
+  "@nepali": {
+    "description": "Nepali language option"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode toggle label"
+  },
+  "lightMode": "Light Mode",
+  "@lightMode": {
+    "description": "Light mode toggle label"
+  },
+  "homeTitle": "Welcome",
+  "@homeTitle": {
+    "description": "Home page title"
+  },
+  "homeSubtitle": "Your legal companion app",
+  "@homeSubtitle": {
+    "description": "Home page subtitle"
+  },
+  "ruleBookTitle": "Rule Book",
+  "@ruleBookTitle": {
+    "description": "Rule Book page title"
+  },
+  "notesTitle": "Notes",
+  "@notesTitle": {
+    "description": "Notes page title"
+  },
+  "calendarTitle": "Calendar",
+  "@calendarTitle": {
+    "description": "Calendar page title"
+  },
+  "moreTitle": "More",
+  "@moreTitle": {
+    "description": "More page title"
+  }
+}
