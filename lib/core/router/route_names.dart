@@ -9,4 +9,5 @@ class RouteNames {
   static const settings = 'settings';
   static const notesEditor = 'notesEditor';
   static const addHearing = 'addHearing';
+  static const reminders = 'reminders';
 }

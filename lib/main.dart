@@ -5,6 +5,8 @@ import 'app.dart';
 import 'features/rule_book/model/legal_document.dart';
 import 'features/notes/model/case_note.dart';
 import 'features/calendar/model/court_event.dart';
+import 'features/reminders/model/reminder.dart';
+import 'features/reminders/service/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +14,8 @@ void main() async {
   Hive.registerAdapter(LegalDocumentAdapter());
   Hive.registerAdapter(CaseNoteAdapter());
   Hive.registerAdapter(CourtEventAdapter());
+  Hive.registerAdapter(ReminderAdapter());
+  await NotificationService.instance.initialize();
   runApp(
     const ProviderScope(
       child: App(),

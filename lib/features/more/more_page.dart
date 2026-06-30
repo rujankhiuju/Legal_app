@@ -21,6 +21,13 @@ class MorePage extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _MenuTile(
+            icon: Icons.notifications_active,
+            iconColor: iconColor,
+            title: 'Reminders',
+            textColor: textColor,
+            onTap: () => context.pushNamed(RouteNames.reminders),
+          ),
+          _MenuTile(
             icon: Icons.settings,
             iconColor: iconColor,
             title: 'Settings',

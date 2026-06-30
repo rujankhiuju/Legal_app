@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../model/court_event.dart';
+import '../../reminders/providers/reminder_provider.dart';
 
 final eventsBoxProvider = FutureProvider<Box<CourtEvent>>((ref) async {
   return Hive.openBox<CourtEvent>('court_events');
@@ -58,12 +59,14 @@ class CalendarActions {
   Future<void> addEvent(CourtEvent event) async {
     final box = await ref.read(eventsBoxProvider.future);
     await box.put(event.id, event);
+    await ref.read(reminderActionsProvider).addEventReminder(event);
     ref.invalidate(eventsListProvider);
   }
 
   Future<void> deleteEvent(String id) async {
     final box = await ref.read(eventsBoxProvider.future);
     await box.delete(id);
+    await ref.read(reminderActionsProvider).deleteEventReminders(id);
     ref.invalidate(eventsListProvider);
   }
 }

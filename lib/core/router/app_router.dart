@@ -10,6 +10,7 @@ import '../../features/calendar/calendar_page.dart';
 import '../../features/calendar/add_hearing_page.dart';
 import '../../features/more/more_page.dart';
 import '../../features/more/settings_page.dart';
+import '../../features/reminders/screen/reminders_page.dart';
 import '../../features/shell/app_shell.dart';
 import 'route_names.dart';
 
@@ -106,6 +107,12 @@ final appRouter = GoRouter(
       name: RouteNames.settings,
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      path: '/${RouteNames.reminders}',
+      name: RouteNames.reminders,
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const RemindersPage(),
     ),
   ],
 );
