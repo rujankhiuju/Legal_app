@@ -20,16 +20,13 @@ dependencies:
   table_calendar: ^3.1.2
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
-  camera: ^0.11.0+2
+  camera: ^0.10.6
   image_picker: ^1.1.2
   image: ^4.5.0
   pdf: ^3.11.1
   path_provider: ^2.1.5
   printing: ^5.14.2
   share_plus: ^10.1.4
-
-dependency_overrides:
-  camera_android_camerax: 0.7.0+1
 
 dev_dependencies:
   flutter_test:
