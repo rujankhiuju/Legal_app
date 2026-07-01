@@ -209,14 +209,20 @@ Page _cupertinoPage(Widget child, GoRouterState state) {
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final transition = CupertinoPageTransitionsBuilder();
-      return transition.buildTransitions<dynamic>(
-        null as PageRoute<dynamic>?,
+      return CupertinoPageTransitionsBuilder().buildTransitions<dynamic>(
+        _dummyRoute(context),
         context,
         animation,
         secondaryAnimation,
         child,
       );
     },
+  );
+}
+
+PageRoute<dynamic> _dummyRoute(BuildContext context) {
+  return PageRouteBuilder<dynamic>(
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    settings: const RouteSettings(),
   );
 }
