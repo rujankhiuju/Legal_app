@@ -35,3 +35,24 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Legal Assistant v1.0.0
+          body: |
+            Initial release of Legal Assistant app.
+
+            ## Features
+            - Rule Book - Browse Nepali legal documents
+            - Case Notes - Manage case notes with Hive persistence
+            - Calendar - Track court events with table_calendar
+            - Reminders - Set reminders with notifications
+            - Scanner - Scan, OCR, and manage documents
+            - Dark/Light theme support
+            - Nepali language localization
+          files: build/app/outputs/flutter-apk/*.apk
+          generate_release_notes: false
+          make_latest: true
