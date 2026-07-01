@@ -117,14 +117,10 @@ class _NotesList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notesAsync = ref.watch(sortedNotesProvider);
+    final notes = ref.watch(sortedNotesProvider);
     final query = ref.watch(notesSearchQueryProvider);
 
-    return notesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-      data: (notes) {
-        if (notes.isEmpty) {
+    if (notes.isEmpty) {
           return _EmptyState(
             query: query,
             isDark: isDark,
@@ -166,8 +162,6 @@ class _NotesList extends ConsumerWidget {
               ),
           ],
         );
-      },
-    );
   }
 }
 

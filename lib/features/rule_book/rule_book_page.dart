@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/staggered_animation.dart';
+import '../model/legal_document.dart';
 import 'providers/rule_book_provider.dart';
 
 class RuleBookPage extends ConsumerStatefulWidget {
@@ -106,14 +107,10 @@ class _DocumentList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groupedAsync = ref.watch(filteredDocsProvider);
+    final grouped = ref.watch(filteredDocsProvider);
     final query = ref.watch(searchQueryProvider);
 
-    return groupedAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-      data: (grouped) {
-        if (grouped.isEmpty) {
+    if (grouped.isEmpty) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -145,8 +142,6 @@ class _DocumentList extends ConsumerWidget {
             ],
           ],
         );
-      },
-    );
   }
 }
 

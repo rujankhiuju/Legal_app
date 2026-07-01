@@ -18,94 +18,100 @@ class RemindersPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Reminders'),
       ),
-      body: Container(
-        color: bgColor,
-        child: ref.watch(sortedRemindersProvider).when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (reminders) {
-            if (reminders.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_outline,
-                        size: 72, color: AppColors.gold.withOpacity(0.4)),
-                    const SizedBox(height: 16),
-                    Text(
-                      'All caught up!',
-                      style: TextStyle(
-                        color: isDark
-                            ? AppColors.white.withOpacity(0.7)
-                            : AppColors.deepNavy.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            final now = DateTime.now();
-            final overdue = reminders.where((r) => r.dueDate.isBefore(now)).toList();
-            final upcoming = reminders.where((r) => !r.dueDate.isBefore(now)).toList();
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-              children: [
-                if (overdue.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.warning_amber, size: 18, color: Colors.redAccent),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Overdue (${overdue.length})',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: Colors.redAccent,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  for (final r in overdue)
-                    StaggeredFadeSlide(
-                      index: overdue.indexOf(r),
-                      child: _ReminderCard(reminder: r, isDark: isDark, overdue: true),
-                    ),
-                  const SizedBox(height: 16),
-                ],
-                if (upcoming.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.schedule, size: 18, color: AppColors.gold),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Upcoming',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: isDark ? AppColors.white : AppColors.deepNavy,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  for (final r in upcoming)
-                    StaggeredFadeSlide(
-                      index: upcoming.indexOf(r),
-                      child: _ReminderCard(reminder: r, isDark: isDark, overdue: false),
-                    ),
-                ],
-              ],
-            );
-          },
-        ),
+      body: _RemindersBody(
+        reminders: ref.watch(sortedRemindersProvider),
+        isDark: isDark,
       ),
+    );
+  }
+}
+
+class _RemindersBody extends ConsumerWidget {
+  final List<Reminder> reminders;
+  final bool isDark;
+
+  const _RemindersBody({required this.reminders, required this.isDark});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (reminders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline,
+                size: 72, color: AppColors.gold.withOpacity(0.4)),
+            const SizedBox(height: 16),
+            Text(
+              'All caught up!',
+              style: TextStyle(
+                color: isDark
+                    ? AppColors.white.withOpacity(0.7)
+                    : AppColors.deepNavy.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final now = DateTime.now();
+    final overdue = reminders.where((r) => r.dueDate.isBefore(now)).toList();
+    final upcoming = reminders.where((r) => !r.dueDate.isBefore(now)).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+      children: [
+        if (overdue.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber, size: 18, color: Colors.redAccent),
+                const SizedBox(width: 6),
+                Text(
+                  'Overdue (${overdue.length})',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final r in overdue)
+            StaggeredFadeSlide(
+              index: overdue.indexOf(r),
+              child: _ReminderCard(reminder: r, isDark: isDark, overdue: true),
+            ),
+          const SizedBox(height: 16),
+        ],
+        if (upcoming.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.schedule, size: 18, color: AppColors.gold),
+                const SizedBox(width: 6),
+                Text(
+                  'Upcoming',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: isDark ? AppColors.white : AppColors.deepNavy,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final r in upcoming)
+            StaggeredFadeSlide(
+              index: upcoming.indexOf(r),
+              child: _ReminderCard(reminder: r, isDark: isDark, overdue: false),
+            ),
+        ],
+      ],
     );
   }
 }

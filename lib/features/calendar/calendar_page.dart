@@ -63,68 +63,65 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           ),
         ],
       ),
-      body: ref.watch(eventsMapProvider).when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (eventsMap) {
-          final dayEvents = _eventsForDate(_selectedDate, eventsMap);
-          final allDates = eventsMap.keys.toSet();
+      body: Builder(builder: (context) {
+        final eventsMap = ref.watch(eventsMapProvider);
+        final dayEvents = _eventsForDate(_selectedDate, eventsMap);
+        final allDates = eventsMap.keys.toSet();
 
-          return SingleChildScrollView(
-            child: Container(
-              color: bgColor,
-              child: Column(
-                children: [
-                  if (_view != CalendarView.agenda)
-                    _CalendarWidget(
-                      view: _view,
-                      focusedDate: _focusedDate,
-                      selectedDate: _selectedDate,
-                      allDates: allDates,
-                      eventsMap: eventsMap,
-                      isDark: isDark,
-                      onDaySelected: (sel, foc) {
-                        setState(() {
-                          _selectedDate = sel;
-                          _focusedDate = foc;
-                        });
-                      },
-                      onFormatChanged: (v) {
-                        setState(() => _view = v);
-                      },
-                      onPageChanged: (foc) {
-                        setState(() => _focusedDate = foc);
-                      },
-                    ),
-                  if (_view == CalendarView.agenda)
-                    _AgendaList(
-                      eventsMap: eventsMap,
-                      isDark: isDark,
-                      textColor: textColor,
-                      cardBg: cardBg,
-                      onDelete: (id) {
-                        HapticFeedback.lightImpact();
-                        ref.read(calendarActionsProvider).deleteEvent(id);
-                      },
-                    ),
-                  if (dayEvents.isNotEmpty && _view != CalendarView.agenda)
-                    _DayEventsList(
-                      date: _selectedDate,
-                      events: dayEvents,
-                      isDark: isDark,
-                      textColor: textColor,
-                      cardBg: cardBg,
-                      onDelete: (id) {
-                        HapticFeedback.lightImpact();
-                        ref.read(calendarActionsProvider).deleteEvent(id);
-                      },
-                    ),
-                ],
-              ),
+        return SingleChildScrollView(
+          child: Container(
+            color: bgColor,
+            child: Column(
+              children: [
+                if (_view != CalendarView.agenda)
+                  _CalendarWidget(
+                    view: _view,
+                    focusedDate: _focusedDate,
+                    selectedDate: _selectedDate,
+                    allDates: allDates,
+                    eventsMap: eventsMap,
+                    isDark: isDark,
+                    onDaySelected: (sel, foc) {
+                      setState(() {
+                        _selectedDate = sel;
+                        _focusedDate = foc;
+                      });
+                    },
+                    onFormatChanged: (v) {
+                      setState(() => _view = v);
+                    },
+                    onPageChanged: (foc) {
+                      setState(() => _focusedDate = foc);
+                    },
+                  ),
+                if (_view == CalendarView.agenda)
+                  _AgendaList(
+                    eventsMap: eventsMap,
+                    isDark: isDark,
+                    textColor: textColor,
+                    cardBg: cardBg,
+                    onDelete: (id) {
+                      HapticFeedback.lightImpact();
+                      ref.read(calendarActionsProvider).deleteEvent(id);
+                    },
+                  ),
+                if (dayEvents.isNotEmpty && _view != CalendarView.agenda)
+                  _DayEventsList(
+                    date: _selectedDate,
+                    events: dayEvents,
+                    isDark: isDark,
+                    textColor: textColor,
+                    cardBg: cardBg,
+                    onDelete: (id) {
+                      HapticFeedback.lightImpact();
+                      ref.read(calendarActionsProvider).deleteEvent(id);
+                    },
+                  ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.gold,
         foregroundColor: AppColors.deepNavy,

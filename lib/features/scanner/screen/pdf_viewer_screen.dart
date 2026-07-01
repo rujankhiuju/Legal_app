@@ -101,7 +101,6 @@ class PdfViewerScreen extends ConsumerWidget {
       body: PdfPreview(
         build: (format) async => File(doc.filePath).readAsBytes(),
         canChangeOrientation: false,
-        canSwapPage: false,
         pageWidth: 400,
         backgroundColor: isDark ? const Color(0xFF0A192F) : const Color(0xFFF8F9FC),
         loadingWidget: const Center(child: CircularProgressIndicator(color: AppColors.gold)),

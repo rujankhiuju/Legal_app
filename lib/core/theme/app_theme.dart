@@ -29,7 +29,7 @@ class AppTheme {
           type: BottomNavigationBarType.fixed,
           elevation: 8,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: AppColors.white,
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -75,7 +75,7 @@ class AppTheme {
           type: BottomNavigationBarType.fixed,
           elevation: 8,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: AppColors.darkSurface,
           elevation: 2,
           shape: RoundedRectangleBorder(
