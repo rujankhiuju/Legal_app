@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/staggered_animation.dart';
-import '../model/legal_document.dart';
+import 'model/legal_document.dart';
 import 'providers/rule_book_provider.dart';
 
 class RuleBookPage extends ConsumerStatefulWidget {
