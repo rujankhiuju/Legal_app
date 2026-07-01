@@ -209,8 +209,9 @@ Page _cupertinoPage(Widget child, GoRouterState state) {
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return CupertinoPageTransitionsBuilder().buildTransitions(
-        null,
+      final transition = CupertinoPageTransitionsBuilder();
+      return transition.buildTransitions<dynamic>(
+        null as PageRoute<dynamic>?,
         context,
         animation,
         secondaryAnimation,

@@ -84,6 +84,9 @@ class _AdvocateHeader extends ConsumerWidget {
       error: (_, __) => defaultProfile,
     );
 
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
+    final subtitleColor = isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(

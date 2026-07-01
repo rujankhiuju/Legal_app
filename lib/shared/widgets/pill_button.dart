@@ -72,7 +72,7 @@ class _PillButtonState extends State<PillButton>
       },
       onTapCancel: () => _controller.reverse(),
       child: AnimatedScaleBuilder(
-        scale: _scale,
+        listenable: _scale,
         child: Container(
           width: widget.width,
           height: widget.height,
