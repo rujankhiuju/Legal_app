@@ -20,6 +20,7 @@ class App extends ConsumerWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      scrollBehavior: AppScrollBehavior(),
       locale: locale,
       supportedLocales: const [
         Locale('en'),

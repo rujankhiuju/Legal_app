@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-class _BouncingScrollBehavior extends ScrollBehavior {
+class AppScrollBehavior extends ScrollBehavior {
   @override
   ScrollPhysics getScrollPhysics(BuildContext context) =>
       const BouncingScrollPhysics();
@@ -12,7 +12,6 @@ class AppTheme {
 
   static ThemeData get light => ThemeData(
         useMaterial3: true,
-        scrollBehavior: _BouncingScrollBehavior(),
         brightness: Brightness.light,
         colorScheme: const ColorScheme.light(
           primary: AppColors.lightPrimary,
@@ -91,7 +90,6 @@ class AppTheme {
 
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
-        scrollBehavior: _BouncingScrollBehavior(),
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
           primary: AppColors.darkPrimary,
