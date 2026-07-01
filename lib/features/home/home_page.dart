@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/router/route_names.dart';
 import '../../shared/widgets/staggered_animation.dart';
 import '../../shared/widgets/polished_card.dart';
 import '../../shared/widgets/pill_button.dart';
+import '../../shared/services/update_checker.dart';
 import '../calendar/model/court_event.dart';
 import '../notes/model/case_note.dart';
 import 'model/advocate_profile.dart';
@@ -23,6 +25,9 @@ class HomePage extends ConsumerWidget {
     final textColor = isDark ? AppColors.darkText : AppColors.lightText;
     final subtitleColor = isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle;
 
+    ref.listen(updateCheckerProvider, (prev, next) {});
+    ref.read(updateCheckerProvider.notifier).checkForUpdate();
+
     return Scaffold(
       body: Container(
         color: bgColor,
@@ -33,6 +38,7 @@ class HomePage extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const _AdvocateHeader(),
+                const _UpdateBanner(),
                 const SizedBox(height: 4),
                 const _PendingRemindersBadge(),
                 const SizedBox(height: 24),
@@ -252,6 +258,107 @@ class _InfoChip extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _UpdateBanner extends ConsumerWidget {
+  const _UpdateBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final updateAsync = ref.watch(updateCheckerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return updateAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (info) {
+        if (info == null || !info.isNewer) return const SizedBox.shrink();
+        return Container(
+          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [AppColors.darkCard, AppColors.darkSurface]
+                  : [AppColors.lightCard, AppColors.lightBackground],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: (isDark ? AppColors.darkAccent : AppColors.lightSecondary)
+                  .withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isDark ? AppColors.darkAccent : AppColors.lightSecondary)
+                      .withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.system_update_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Update ${info.latestVersion} available',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: isDark ? AppColors.darkText : AppColors.lightText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      info.releaseNotes.split('\n').first,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () async {
+                  final uri = Uri.tryParse(info.downloadUrl);
+                  if (uri != null && await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    'Update',
+                    style: const TextStyle(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
