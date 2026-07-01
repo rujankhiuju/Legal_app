@@ -101,8 +101,8 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final scanCount = ref.watch(scannedImagePathsProvider).length;
+    final accentColor = AppColors.lightSecondary;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -112,16 +112,14 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
         title: const Text('Document Scanner'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.photo_library),
+            icon: const Icon(Icons.photo_library_rounded),
             onPressed: _pickFromGallery,
             tooltip: 'Pick from gallery',
           ),
           if (scanCount > 0)
             IconButton(
-              icon: const Icon(Icons.check, color: AppColors.gold),
-              onPressed: () {
-                context.pushNamed(RouteNames.pdfGenerate);
-              },
+              icon: Icon(Icons.check_rounded, color: accentColor),
+              onPressed: () => context.pushNamed(RouteNames.pdfGenerate),
               tooltip: 'Create PDF ($scanCount)',
             ),
         ],
@@ -129,7 +127,10 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
       body: _isReady && _controller != null
           ? Stack(
               children: [
-                CameraPreview(_controller!),
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+                  child: CameraPreview(_controller!),
+                ),
                 SafeArea(
                   child: Column(
                     children: [
@@ -149,15 +150,15 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
                     top: 8,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        borderRadius: BorderRadius.circular(16),
+                        color: accentColor,
+                        borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '$scanCount scan${scanCount > 1 ? 's' : ''}',
                         style: const TextStyle(
-                          color: AppColors.deepNavy,
+                          color: AppColors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -170,9 +171,12 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: AppColors.gold),
+                  CircularProgressIndicator(color: AppColors.white),
                   SizedBox(height: 16),
-                  Text('Initializing camera...', style: TextStyle(color: AppColors.white)),
+                  Text(
+                    'Initializing camera...',
+                    style: TextStyle(color: AppColors.white),
+                  ),
                 ],
               ),
             ),
@@ -220,14 +224,15 @@ class _CaptureControls extends StatelessWidget {
         if (scanCount > 0)
           ElevatedButton.icon(
             onPressed: onGeneratePdf,
-            icon: const Icon(Icons.picture_as_pdf, size: 18),
+            icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
             label: Text('Create PDF ($scanCount)'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.deepNavy,
+              backgroundColor: AppColors.lightSecondary,
+              foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(26),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
       ],

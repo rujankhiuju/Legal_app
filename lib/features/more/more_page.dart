@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/router/route_names.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/polished_card.dart';
 
 class MorePage extends ConsumerWidget {
   const MorePage({super.key});
@@ -10,42 +11,45 @@ class MorePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
-    final iconColor = AppColors.gold;
+    final accentColor = isDark ? AppColors.darkAccent : AppColors.lightSecondary;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('More'),
       ),
       body: ListView(
+        physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           _MenuTile(
-            icon: Icons.document_scanner,
-            iconColor: iconColor,
+            icon: Icons.document_scanner_rounded,
+            iconColor: accentColor,
             title: 'Document Scanner',
-            textColor: textColor,
+            isDark: isDark,
             onTap: () => context.pushNamed(RouteNames.scanner),
           ),
+          const SizedBox(height: 8),
           _MenuTile(
-            icon: Icons.picture_as_pdf,
-            iconColor: iconColor,
+            icon: Icons.picture_as_pdf_rounded,
+            iconColor: accentColor,
             title: 'PDF Library',
-            textColor: textColor,
+            isDark: isDark,
             onTap: () => context.pushNamed(RouteNames.pdfLibrary),
           ),
+          const SizedBox(height: 8),
           _MenuTile(
-            icon: Icons.notifications_active,
-            iconColor: iconColor,
+            icon: Icons.notifications_active_rounded,
+            iconColor: accentColor,
             title: 'Reminders',
-            textColor: textColor,
+            isDark: isDark,
             onTap: () => context.pushNamed(RouteNames.reminders),
           ),
+          const SizedBox(height: 8),
           _MenuTile(
-            icon: Icons.settings,
-            iconColor: iconColor,
+            icon: Icons.settings_rounded,
+            iconColor: accentColor,
             title: 'Settings',
-            textColor: textColor,
+            isDark: isDark,
             onTap: () => context.pushNamed(RouteNames.settings),
           ),
         ],
@@ -58,24 +62,43 @@ class _MenuTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
-  final Color textColor;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _MenuTile({
     required this.icon,
     required this.iconColor,
     required this.title,
-    required this.textColor,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return PolishedCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.zero,
       child: ListTile(
-        leading: Icon(icon, color: iconColor),
-        title: Text(title, style: TextStyle(color: textColor)),
-        trailing: const Icon(Icons.chevron_right),
+        contentPadding: EdgeInsets.zero,
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 22),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            color: isDark ? AppColors.darkText : AppColors.lightText,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right_rounded,
+          color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+        ),
         onTap: onTap,
       ),
     );

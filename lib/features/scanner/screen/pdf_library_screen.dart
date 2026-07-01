@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/router/route_names.dart';
+import '../../../shared/widgets/staggered_animation.dart';
+import '../../../shared/widgets/polished_card.dart';
 import '../model/pdf_document.dart';
 import '../providers/scanner_provider.dart';
 
@@ -15,21 +17,23 @@ class PdfLibraryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.deepNavy : AppColors.lightBackground;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Library'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.document_scanner, color: AppColors.gold),
+            icon: Icon(
+              Icons.document_scanner_rounded,
+              color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+            ),
             onPressed: () => context.pushNamed(RouteNames.scanner),
             tooltip: 'Scan new document',
           ),
         ],
       ),
       body: Container(
-        color: bgColor,
+        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
         child: ref.watch(pdfListProvider).when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
@@ -39,20 +43,31 @@ class PdfLibraryScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.picture_as_pdf, size: 72, color: AppColors.gold.withOpacity(0.4)),
+                    Icon(
+                      Icons.picture_as_pdf_rounded,
+                      size: 72,
+                      color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                    ),
                     const SizedBox(height: 16),
-                    Text('No PDFs yet',
+                    Text(
+                      'No PDFs yet',
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.white.withOpacity(0.7)
-                            : AppColors.deepNavy.withOpacity(0.7),
+                        color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextButton.icon(
                       onPressed: () => context.pushNamed(RouteNames.scanner),
-                      icon: const Icon(Icons.document_scanner, color: AppColors.gold),
-                      label: const Text('Scan a document', style: TextStyle(color: AppColors.gold)),
+                      icon: Icon(
+                        Icons.document_scanner_rounded,
+                        color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      ),
+                      label: Text(
+                        'Scan a document',
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -62,9 +77,9 @@ class PdfLibraryScreen extends ConsumerWidget {
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: pdfs.length,
-              itemBuilder: (context, index) => _PdfCard(
-                doc: pdfs[index],
-                isDark: isDark,
+              itemBuilder: (context, index) => StaggeredFadeSlide(
+                index: index,
+                child: _PdfCard(doc: pdfs[index], isDark: isDark),
               ),
             );
           },
@@ -81,78 +96,107 @@ class _PdfCard extends ConsumerWidget {
   const _PdfCard({required this.doc, required this.isDark});
 
   String _formatDate(DateTime dt) {
-    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${m[dt.month-1]} ${dt.day}, ${dt.year}';
+    const m = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${m[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
-    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
+    final accentColor = isDark ? AppColors.darkAccent : AppColors.lightSecondary;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: Container(
-          width: 44,
-          height: 52,
-          decoration: BoxDecoration(
-            color: AppColors.gold.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PolishedCard(
+        padding: const EdgeInsets.all(0),
+        margin: EdgeInsets.zero,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            width: 48,
+            height: 56,
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.picture_as_pdf_rounded,
+              color: accentColor,
+              size: 26,
+            ),
           ),
-          child: const Icon(Icons.picture_as_pdf, color: AppColors.gold, size: 26),
+          title: Text(
+            doc.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          subtitle: Text(
+            '${doc.pageCount} page${doc.pageCount > 1 ? 's' : ''} · ${_formatDate(doc.createdAt)}',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            ),
+          ),
+          trailing: PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_horiz_rounded,
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            ),
+            onSelected: (action) => _handleAction(context, ref, action),
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'view',
+                child: ListTile(
+                  leading: Icon(Icons.visibility_rounded),
+                  title: Text('View'),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'share',
+                child: ListTile(
+                  leading: Icon(Icons.share_rounded),
+                  title: Text('Share'),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'rename',
+                child: ListTile(
+                  leading: Icon(Icons.edit_rounded),
+                  title: Text('Rename'),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                  title: Text('Delete', style: TextStyle(color: AppColors.error)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          onTap: () => context.pushNamed(RouteNames.pdfViewer, extra: doc),
         ),
-        title: Text(
-          doc.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontWeight: FontWeight.w600, color: textColor),
-        ),
-        subtitle: Text(
-          '${doc.pageCount} page${doc.pageCount > 1 ? 's' : ''} · ${_formatDate(doc.createdAt)}',
-          style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.6)),
-        ),
-        trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: textColor.withOpacity(0.6)),
-          onSelected: (action) => _handleAction(context, ref, action),
-          itemBuilder: (_) => [
-            const PopupMenuItem(value: 'view', child: ListTile(
-              leading: Icon(Icons.visibility, color: AppColors.gold),
-              title: Text('View'),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            )),
-            const PopupMenuItem(value: 'share', child: ListTile(
-              leading: Icon(Icons.share, color: AppColors.gold),
-              title: Text('Share'),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            )),
-            const PopupMenuItem(value: 'rename', child: ListTile(
-              leading: Icon(Icons.edit, color: AppColors.gold),
-              title: Text('Rename'),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            )),
-            const PopupMenuItem(value: 'delete', child: ListTile(
-              leading: Icon(Icons.delete_outline, color: Colors.redAccent),
-              title: Text('Delete', style: TextStyle(color: Colors.redAccent)),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-            )),
-          ],
-        ),
-        onTap: () => context.pushNamed(RouteNames.pdfViewer, extra: doc),
       ),
     );
   }
 
-  Future<void> _handleAction(BuildContext context, WidgetRef ref, String action) async {
+  Future<void> _handleAction(
+      BuildContext context, WidgetRef ref, String action) async {
     final actions = ref.read(pdfActionsProvider);
 
     switch (action) {
@@ -174,10 +218,13 @@ class _PdfCard extends ConsumerWidget {
             title: const Text('Delete PDF'),
             content: Text('Delete "${doc.title}"?'),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                child: const Text('Delete', style: TextStyle(color: AppColors.error)),
               ),
             ],
           ),
@@ -206,7 +253,10 @@ class _PdfCard extends ConsumerWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {

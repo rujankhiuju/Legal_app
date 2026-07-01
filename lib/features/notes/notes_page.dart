@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/route_names.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/staggered_animation.dart';
+import '../../shared/widgets/polished_card.dart';
 import 'model/case_note.dart';
 import 'providers/notes_provider.dart';
 
@@ -31,7 +32,7 @@ class _NotesPageState extends ConsumerState<NotesPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.deepNavy : AppColors.lightBackground;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
     return Scaffold(
       appBar: AppBar(
@@ -55,10 +56,8 @@ class _NotesPageState extends ConsumerState<NotesPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.gold,
-        foregroundColor: AppColors.deepNavy,
         onPressed: () => _openEditor(null),
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add_rounded),
       ),
     );
   }
@@ -81,28 +80,34 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      color: isDark ? AppColors.darkSurface : AppColors.white,
+      color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: 'Search notes...',
-          prefixIcon: const Icon(Icons.search, color: AppColors.gold),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+          ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear, color: AppColors.gold),
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                  ),
                   onPressed: onClear,
                 )
               : null,
           filled: true,
           fillColor: isDark
-              ? AppColors.deepNavy.withOpacity(0.6)
+              ? AppColors.darkBackground
               : AppColors.lightBackground,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
         ),
       ),
     );
@@ -121,47 +126,51 @@ class _NotesList extends ConsumerWidget {
     final query = ref.watch(notesSearchQueryProvider);
 
     if (notes.isEmpty) {
-          return _EmptyState(
-            query: query,
+      return _EmptyState(
+        query: query,
+        isDark: isDark,
+        onOpenEditor: onOpenEditor,
+      );
+    }
+
+    final pinned = notes.where((n) => n.pinned).toList();
+    final unpinned = notes.where((n) => !n.pinned).toList();
+
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 80),
+      children: [
+        if (pinned.isNotEmpty) ...[
+          _SectionHeader(
+            title: 'Pinned',
             isDark: isDark,
-            onOpenEditor: onOpenEditor,
-          );
-        }
-
-        final pinned = notes.where((n) => n.pinned).toList();
-        final unpinned = notes.where((n) => !n.pinned).toList();
-
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: [
-            if (pinned.isNotEmpty) ...[
-              _SectionHeader(title: 'Pinned', isDark: isDark, icon: Icons.push_pin),
-              for (final note in pinned)
-                StaggeredFadeSlide(
-                  index: pinned.indexOf(note),
-                  child: _NoteCard(
-                    note: note,
-                    isDark: isDark,
-                    onTap: () => onOpenEditor(note),
-                  ),
-                ),
-            ],
-            _SectionHeader(
-              title: query.isEmpty ? 'Recent Notes' : 'Results',
-              isDark: isDark,
-              icon: query.isEmpty ? Icons.history : Icons.search,
-            ),
-            for (final note in unpinned)
-              StaggeredFadeSlide(
-                index: unpinned.indexOf(note),
-                child: _NoteCard(
-                  note: note,
-                  isDark: isDark,
-                  onTap: () => onOpenEditor(note),
-                ),
+            icon: Icons.push_pin_rounded,
+          ),
+          for (final note in pinned)
+            StaggeredFadeSlide(
+              index: pinned.indexOf(note),
+              child: _NoteCard(
+                note: note,
+                isDark: isDark,
+                onTap: () => onOpenEditor(note),
               ),
-          ],
-        );
+            ),
+        ],
+        _SectionHeader(
+          title: query.isEmpty ? 'Recent Notes' : 'Results',
+          isDark: isDark,
+          icon: query.isEmpty ? Icons.history_rounded : Icons.search_rounded,
+        ),
+        for (final note in unpinned)
+          StaggeredFadeSlide(
+            index: unpinned.indexOf(note),
+            child: _NoteCard(
+              note: note,
+              isDark: isDark,
+              onTap: () => onOpenEditor(note),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -183,27 +192,30 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            query.isEmpty ? Icons.note_add_outlined : Icons.search_off,
+            query.isEmpty ? Icons.note_add_outlined : Icons.search_off_rounded,
             size: 72,
-            color: AppColors.gold.withOpacity(0.5),
+            color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
           ),
           const SizedBox(height: 16),
           Text(
             query.isEmpty ? 'No notes yet' : 'No results for "$query"',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: isDark
-                      ? AppColors.white.withOpacity(0.7)
-                      : AppColors.deepNavy.withOpacity(0.7),
-                ),
+            style: TextStyle(
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            ),
           ),
           if (query.isEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TextButton.icon(
               onPressed: () => onOpenEditor(null),
-              icon: const Icon(Icons.add, color: AppColors.gold),
-              label: const Text(
+              icon: Icon(
+                Icons.add_rounded,
+                color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+              ),
+              label: Text(
                 'Create your first note',
-                style: TextStyle(color: AppColors.gold),
+                style: TextStyle(
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                ),
               ),
             ),
           ],
@@ -227,20 +239,22 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 6),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.gold),
+          Icon(
+            icon,
+            size: 16,
+            color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+          ),
           const SizedBox(width: 6),
           Text(
             title,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-              color: isDark
-                  ? AppColors.white.withOpacity(0.7)
-                  : AppColors.deepNavy.withOpacity(0.7),
+              letterSpacing: 0.3,
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
             ),
           ),
         ],
@@ -262,22 +276,19 @@ class _NoteCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bg = isDark ? AppColors.darkSurface : AppColors.white;
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Dismissible(
         key: ValueKey(note.id),
         direction: DismissDirection.endToStart,
         background: Container(
           alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
+          padding: const EdgeInsets.only(right: 24),
           decoration: BoxDecoration(
-            color: Colors.redAccent,
-            borderRadius: BorderRadius.circular(14),
+            color: AppColors.error.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: const Icon(Icons.delete_outline, color: AppColors.white, size: 28),
+          child: const Icon(Icons.delete_outline_rounded, color: AppColors.white, size: 28),
         ),
         confirmDismiss: (_) async {
           return await showDialog<bool>(
@@ -292,7 +303,7 @@ class _NoteCard extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(true),
-                  child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                  child: const Text('Delete', style: TextStyle(color: AppColors.error)),
                 ),
               ],
             ),
@@ -312,23 +323,23 @@ class _NoteCard extends ConsumerWidget {
               ),
             );
           },
-          child: Card(
+          child: PolishedCard(
+            padding: const EdgeInsets.all(16),
             margin: EdgeInsets.zero,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: note.pinned
-                  ? BorderSide(color: AppColors.gold.withOpacity(0.4))
-                  : BorderSide.none,
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: onTap,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(14),
-                ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: note.pinned
+                    ? Border.all(
+                        color: isDark
+                            ? AppColors.darkAccent.withOpacity(0.4)
+                            : AppColors.lightSecondary.withOpacity(0.4),
+                      )
+                    : null,
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: onTap,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -339,9 +350,23 @@ class _NoteCard extends ConsumerWidget {
                           Row(
                             children: [
                               if (note.pinned) ...[
-                                const Icon(Icons.push_pin,
-                                    size: 14, color: AppColors.gold),
-                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.darkAccent.withOpacity(0.12)
+                                        : AppColors.lightSecondary.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.push_pin_rounded,
+                                    size: 12,
+                                    color: isDark
+                                        ? AppColors.darkAccent
+                                        : AppColors.lightSecondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
                               ],
                               Expanded(
                                 child: Text(
@@ -351,7 +376,7 @@ class _NoteCard extends ConsumerWidget {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15,
-                                    color: textColor,
+                                    color: isDark ? AppColors.darkText : AppColors.lightText,
                                   ),
                                 ),
                               ),
@@ -366,30 +391,32 @@ class _NoteCard extends ConsumerWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 height: 1.4,
-                                color: isDark
-                                    ? AppColors.white.withOpacity(0.6)
-                                    : AppColors.deepNavy.withOpacity(0.6),
+                                color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
                               ),
                             ),
                           ],
                           if (note.tags.isNotEmpty) ...[
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Wrap(
                               spacing: 6,
                               runSpacing: 4,
                               children: note.tags.map((tag) {
                                 return Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
+                                      horizontal: 12, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: isDark
+                                        ? AppColors.darkAccent.withOpacity(0.12)
+                                        : AppColors.lightSecondary.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Text(
                                     tag,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: AppColors.gold,
+                                      color: isDark
+                                          ? AppColors.darkAccent
+                                          : AppColors.lightSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -404,10 +431,8 @@ class _NoteCard extends ConsumerWidget {
                     Text(
                       _formatTime(note.updatedAt),
                       style: TextStyle(
-                        fontSize: 11,
-                        color: isDark
-                            ? AppColors.white.withOpacity(0.4)
-                            : AppColors.deepNavy.withOpacity(0.4),
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
                       ),
                     ),
                   ],

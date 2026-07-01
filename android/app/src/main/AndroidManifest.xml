@@ -14,7 +14,7 @@
         tools:replace="android:maxSdkVersion" />
 
     <application
-        android:label="Legal Assistant"
+        android:label="Nepali Legal Assistant"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true"

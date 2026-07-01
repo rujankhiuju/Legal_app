@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class StaggeredFadeSlide extends StatefulWidget {
   final int index;
   final Widget child;
+  final Duration? duration;
 
   const StaggeredFadeSlide({
     super.key,
     required this.index,
     required this.child,
+    this.duration,
   });
 
   @override
@@ -25,19 +27,19 @@ class _StaggeredFadeSlideState extends State<StaggeredFadeSlide>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: widget.duration ?? const Duration(milliseconds: 500),
     );
 
     _opacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    Future.delayed(Duration(milliseconds: 60 * widget.index), () {
+    Future.delayed(Duration(milliseconds: 50 * widget.index), () {
       if (mounted) _controller.forward();
     });
   }

@@ -80,7 +80,8 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
   Future<void> _cropToVisible() async {
     if (_workingImage == null) return;
     try {
-      final RenderBox? box = _imageKey.currentContext?.findRenderObject() as RenderBox?;
+      final RenderBox? box =
+          _imageKey.currentContext?.findRenderObject() as RenderBox?;
       if (box == null) return;
       final viewportSize = box.size;
       final matrix = _transformController.value;
@@ -93,15 +94,20 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
         Offset(viewportSize.width, viewportSize.height),
       );
 
-      final scaleX = _workingImage!.width / viewportSize.width;
-      final scaleY = _workingImage!.height / viewportSize.height;
       final scale = (matrix.getMaxScaleOnAxis());
-      final cropX = (-topLeft.dx * scale).clamp(0, _workingImage!.width - 1).toInt();
-      final cropY = (-topLeft.dy * scale).clamp(0, _workingImage!.height - 1).toInt();
-      final cropW = (viewportSize.width / scale).clamp(1, _workingImage!.width - cropX).toInt();
-      final cropH = (viewportSize.height / scale).clamp(1, _workingImage!.height - cropY).toInt();
+      final cropX =
+          (-topLeft.dx * scale).clamp(0, _workingImage!.width - 1).toInt();
+      final cropY =
+          (-topLeft.dy * scale).clamp(0, _workingImage!.height - 1).toInt();
+      final cropW = (viewportSize.width / scale)
+          .clamp(1, _workingImage!.width - cropX)
+          .toInt();
+      final cropH = (viewportSize.height / scale)
+          .clamp(1, _workingImage!.height - cropY)
+          .toInt();
 
-      final cropped = img.copyCrop(_workingImage!, x: cropX, y: cropY, width: cropW, height: cropH);
+      final cropped = img.copyCrop(_workingImage!,
+          x: cropX, y: cropY, width: cropW, height: cropH);
       _workingImage = cropped;
       _displayBytes = Uint8List.fromList(img.encodeJpg(cropped));
       _transformController.value = Matrix4.identity();
@@ -115,7 +121,8 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
   Future<void> _save() async {
     if (_workingImage == null) return;
     final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/edited_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final path =
+        '${dir.path}/edited_${DateTime.now().millisecondsSinceEpoch}.jpg';
     await File(path).writeAsBytes(img.encodeJpg(_workingImage!));
 
     final paths = ref.read(scannedImagePathsProvider);
@@ -128,7 +135,7 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = AppColors.lightSecondary;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -138,14 +145,16 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
         title: const Text('Edit Scan'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: AppColors.gold),
+            icon: Icon(Icons.check_rounded, color: accentColor),
             onPressed: _save,
             tooltip: 'Save',
           ),
         ],
       ),
       body: _displayBytes == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.white),
+            )
           : Column(
               children: [
                 Expanded(
@@ -161,23 +170,28 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
                 ),
                 Container(
                   color: Colors.grey[900],
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _ToolButton(
-                        icon: Icons.rotate_left,
+                        icon: Icons.rotate_left_rounded,
                         label: 'Rotate',
                         onTap: () => _rotate(-90),
+                        accentColor: accentColor,
                       ),
                       _ToolButton(
-                        icon: _isGrayscale ? Icons.color_lens : Icons.filter_b_and_w,
+                        icon: _isGrayscale
+                            ? Icons.color_lens_rounded
+                            : Icons.filter_b_and_w_rounded,
                         label: _isGrayscale ? 'Color' : 'Grayscale',
                         onTap: _toggleGrayscale,
                         active: _isGrayscale,
+                        accentColor: accentColor,
                       ),
                       _ToolButton(
-                        icon: Icons.crop,
+                        icon: Icons.crop_rounded,
                         label: _cropMode ? 'Apply Crop' : 'Crop',
                         onTap: () {
                           if (_cropMode) {
@@ -187,6 +201,7 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
                           }
                         },
                         active: _cropMode,
+                        accentColor: accentColor,
                       ),
                     ],
                   ),
@@ -202,12 +217,14 @@ class _ToolButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool active;
+  final Color accentColor;
 
   const _ToolButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.active = false,
+    required this.accentColor,
   });
 
   @override
@@ -220,12 +237,14 @@ class _ToolButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: active ? AppColors.gold : AppColors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
+              color: active
+                  ? accentColor
+                  : AppColors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               icon,
-              color: active ? AppColors.deepNavy : AppColors.white,
+              color: active ? AppColors.white : AppColors.white,
               size: 22,
             ),
           ),
@@ -234,7 +253,9 @@ class _ToolButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: active ? AppColors.gold : AppColors.white.withOpacity(0.7),
+              color: active
+                  ? accentColor
+                  : AppColors.white.withOpacity(0.7),
             ),
           ),
         ],

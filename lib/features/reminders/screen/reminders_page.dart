@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/staggered_animation.dart';
+import '../../../shared/widgets/polished_card.dart';
 import '../model/reminder.dart';
 import '../providers/reminder_provider.dart';
 
@@ -12,15 +13,18 @@ class RemindersPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.deepNavy : AppColors.lightBackground;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reminders'),
       ),
-      body: _RemindersBody(
-        reminders: ref.watch(sortedRemindersProvider),
-        isDark: isDark,
+      body: Container(
+        color: bgColor,
+        child: _RemindersBody(
+          reminders: ref.watch(sortedRemindersProvider),
+          isDark: isDark,
+        ),
       ),
     );
   }
@@ -39,15 +43,16 @@ class _RemindersBody extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline,
-                size: 72, color: AppColors.gold.withOpacity(0.4)),
+            Icon(
+              Icons.check_circle_outline_rounded,
+              size: 72,
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            ),
             const SizedBox(height: 16),
             Text(
               'All caught up!',
               style: TextStyle(
-                color: isDark
-                    ? AppColors.white.withOpacity(0.7)
-                    : AppColors.deepNavy.withOpacity(0.7),
+                color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
               ),
             ),
           ],
@@ -60,6 +65,7 @@ class _RemindersBody extends ConsumerWidget {
     final upcoming = reminders.where((r) => !r.dueDate.isBefore(now)).toList();
 
     return ListView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
       children: [
         if (overdue.isNotEmpty) ...[
@@ -67,14 +73,14 @@ class _RemindersBody extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                const Icon(Icons.warning_amber, size: 18, color: Colors.redAccent),
+                const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.error),
                 const SizedBox(width: 6),
                 Text(
                   'Overdue (${overdue.length})',
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: Colors.redAccent,
+                    color: AppColors.error,
                   ),
                 ),
               ],
@@ -85,21 +91,25 @@ class _RemindersBody extends ConsumerWidget {
               index: overdue.indexOf(r),
               child: _ReminderCard(reminder: r, isDark: isDark, overdue: true),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         if (upcoming.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                const Icon(Icons.schedule, size: 18, color: AppColors.gold),
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Upcoming',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: isDark ? AppColors.white : AppColors.deepNavy,
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
                   ),
                 ),
               ],
@@ -129,14 +139,30 @@ class _ReminderCard extends ConsumerWidget {
 
   Color _priorityColor(Priority p) {
     return switch (p) {
-      Priority.high => const Color(0xFFE53E3E),
-      Priority.medium => const Color(0xFFDD6B20),
-      Priority.low => AppColors.gold,
+      Priority.high => AppColors.error,
+      Priority.medium => AppColors.warning,
+      Priority.low => isDark ? AppColors.darkAccent : AppColors.lightSecondary,
     };
   }
 
-  String _priorityLabel(Priority p) {
-    return p.name.toUpperCase();
+  Widget _priorityPill(Priority p) {
+    final color = _priorityColor(p);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        p.name.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 
   String _time(DateTime dt) {
@@ -150,121 +176,117 @@ class _ReminderCard extends ConsumerWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${dt.month}/${dt.day} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    return '${dt.month}/${dt.day}';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _priorityColor(reminder.priority);
     final actions = ref.read(reminderActionsProvider);
-    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: overdue ? Colors.redAccent.withOpacity(0.4) : color.withOpacity(0.2),
-          width: overdue ? 1.5 : 1,
-        ),
-      ),
-      child: Card(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PolishedCard(
+        padding: const EdgeInsets.all(16),
         margin: EdgeInsets.zero,
-        elevation: 0,
-        color: overdue ? Colors.redAccent.withOpacity(0.06) : cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      _priorityLabel(reminder.priority),
+        backgroundColor: overdue
+            ? AppColors.error.withOpacity(0.06)
+            : (isDark ? AppColors.darkCard : AppColors.lightCard),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: overdue
+                  ? AppColors.error.withOpacity(0.3)
+                  : color.withOpacity(0.2),
+              width: overdue ? 1.5 : 1,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _priorityPill(reminder.priority),
+                    const Spacer(),
+                    Text(
+                      _time(reminder.dueDate),
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                        letterSpacing: 0.5,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: overdue
+                            ? AppColors.error
+                            : isDark
+                                ? AppColors.darkSubtitle
+                                : AppColors.lightSubtitle,
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  reminder.title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: textColor,
                   ),
-                  const Spacer(),
+                ),
+                if (reminder.note.isNotEmpty) ...[
+                  const SizedBox(height: 4),
                   Text(
-                    _time(reminder.dueDate),
+                    reminder.note,
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: overdue ? Colors.redAccent : textColor.withOpacity(0.6),
+                      fontSize: 13,
+                      color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                reminder.title,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: textColor,
-                ),
-              ),
-              if (reminder.note.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  reminder.note,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: textColor.withOpacity(0.65),
-                  ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _ActionChip(
+                      icon: Icons.snooze_rounded,
+                      label: 'Snooze',
+                      color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        actions.snooze(reminder);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Snoozed 15 min'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _ActionChip(
+                      icon: Icons.check_circle_outline_rounded,
+                      label: 'Complete',
+                      color: AppColors.success,
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        actions.markComplete(reminder);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _ActionChip(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete',
+                      color: AppColors.error,
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        actions.deleteReminder(reminder);
+                      },
+                    ),
+                  ],
                 ),
               ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  _ActionChip(
-                    icon: Icons.snooze,
-                    label: 'Snooze',
-                    color: AppColors.darkBlue,
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      actions.snooze(reminder);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Snoozed 15 min'), duration: Duration(seconds: 1)),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 6),
-                  _ActionChip(
-                    icon: Icons.check_circle_outline,
-                    label: 'Complete',
-                    color: const Color(0xFF38A169),
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      actions.markComplete(reminder);
-                    },
-                  ),
-                  const SizedBox(width: 6),
-                  _ActionChip(
-                    icon: Icons.delete_outline,
-                    label: 'Delete',
-                    color: Colors.redAccent,
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      actions.deleteReminder(reminder);
-                    },
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -290,22 +312,26 @@ class _ActionChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             border: Border.all(color: color.withOpacity(0.4)),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
+              Icon(icon, size: 15, color: color),
+              const SizedBox(width: 5),
               Text(
                 label,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: color),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
               ),
             ],
           ),

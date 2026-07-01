@@ -16,13 +16,14 @@ class PdfViewerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = isDark ? AppColors.darkAccent : AppColors.lightSecondary;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(doc.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share, color: AppColors.gold),
+            icon: Icon(Icons.share_rounded, color: accentColor),
             onPressed: () async {
               HapticFeedback.lightImpact();
               try {
@@ -34,7 +35,10 @@ class PdfViewerScreen extends ConsumerWidget {
             tooltip: 'Share',
           ),
           PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: isDark ? AppColors.white : AppColors.deepNavy),
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: isDark ? AppColors.darkText : AppColors.lightText,
+            ),
             onSelected: (action) async {
               final actions = ref.read(pdfActionsProvider);
               switch (action) {
@@ -46,7 +50,10 @@ class PdfViewerScreen extends ConsumerWidget {
                       title: const Text('Rename'),
                       content: TextField(controller: ctrl, autofocus: true),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel'),
+                        ),
                         TextButton(
                           onPressed: () {
                             if (ctrl.text.trim().isNotEmpty) {
@@ -66,10 +73,13 @@ class PdfViewerScreen extends ConsumerWidget {
                       title: const Text('Delete PDF'),
                       content: Text('Delete "${doc.title}"?'),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                          child: const Text('Delete', style: TextStyle(color: AppColors.error)),
                         ),
                       ],
                     ),
@@ -82,18 +92,24 @@ class PdfViewerScreen extends ConsumerWidget {
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 'rename', child: ListTile(
-                leading: Icon(Icons.edit, color: AppColors.gold),
-                title: Text('Rename'),
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              )),
-              const PopupMenuItem(value: 'delete', child: ListTile(
-                leading: Icon(Icons.delete_outline, color: Colors.redAccent),
-                title: Text('Delete', style: TextStyle(color: Colors.redAccent)),
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-              )),
+              const PopupMenuItem(
+                value: 'rename',
+                child: ListTile(
+                  leading: Icon(Icons.edit_rounded),
+                  title: Text('Rename'),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                  title: Text('Delete', style: TextStyle(color: AppColors.error)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
             ],
           ),
         ],
@@ -103,9 +119,11 @@ class PdfViewerScreen extends ConsumerWidget {
         canChangeOrientation: false,
         maxPageWidth: 400,
         scrollViewDecoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0A192F) : const Color(0xFFF8F9FC),
+          color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
         ),
-        loadingWidget: const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+        loadingWidget: Center(
+          child: CircularProgressIndicator(color: accentColor),
+        ),
       ),
     );
   }

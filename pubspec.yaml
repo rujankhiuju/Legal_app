@@ -27,6 +27,8 @@ dependencies:
   path_provider: ^2.1.5
   printing: ^5.14.2
   share_plus: ^10.1.4
+  cupertino_icons: ^1.0.8
+  flutter_staggered_animations: ^1.1.0
 
 dev_dependencies:
   flutter_test:

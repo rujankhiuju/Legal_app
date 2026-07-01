@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/polished_card.dart';
 import 'model/court_event.dart';
 import 'providers/calendar_provider.dart';
 
@@ -22,11 +23,11 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
   bool _isHearing = true;
 
   static const _colorOptions = [
-    ('1E3A8A', 'Blue'),
-    ('E53E3E', 'Red'),
-    ('38A169', 'Green'),
-    ('DD6B20', 'Orange'),
-    ('805AD5', 'Purple'),
+    ('2C2C2C', 'Dark'),
+    ('8B7E6B', 'Taupe'),
+    ('C4A882', 'Gold'),
+    ('8E8E93', 'Gray'),
+    ('1C1C1E', 'Black'),
   ];
 
   @override
@@ -54,8 +55,7 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.gold,
-                  onPrimary: AppColors.deepNavy,
+                  primary: AppColors.lightSecondary,
                 ),
           ),
           child: child!,
@@ -73,8 +73,7 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppColors.gold,
-                  onPrimary: AppColors.deepNavy,
+                  primary: AppColors.lightSecondary,
                 ),
           ),
           child: child!,
@@ -123,23 +122,27 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
-    final inputBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final hintColor = textColor.withOpacity(0.35);
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
+    final subtitleColor = isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle;
+    final inputBg = isDark ? AppColors.darkSurface : AppColors.lightBackground;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Hearing'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check, color: AppColors.gold),
+            icon: Icon(
+              Icons.check_rounded,
+              color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+            ),
             onPressed: _save,
           ),
         ],
       ),
       body: Container(
-        color: isDark ? AppColors.deepNavy : AppColors.lightBackground,
+        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
         child: ListView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(16),
           children: [
             TextField(
@@ -147,14 +150,14 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textColor),
               decoration: InputDecoration(
                 hintText: 'Hearing Title',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: subtitleColor),
                 filled: true,
                 fillColor: inputBg,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(18),
               ),
               textCapitalization: TextCapitalization.sentences,
             ),
@@ -164,37 +167,41 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
               style: TextStyle(fontSize: 16, color: textColor),
               decoration: InputDecoration(
                 hintText: 'Case Name',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: subtitleColor),
                 filled: true,
                 fillColor: inputBg,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(18),
               ),
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 14),
             InkWell(
               onTap: _pickDate,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: inputBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today, color: AppColors.gold, size: 20),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Date',
-                          style: TextStyle(fontSize: 12, color: hintColor),
+                          style: TextStyle(fontSize: 12, color: subtitleColor),
                         ),
                         Text(
                           '${_selectedDate.month}/${_selectedDate.day}/${_selectedDate.year}',
@@ -203,7 +210,11 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
                       ],
                     ),
                     const Spacer(),
-                    const Icon(Icons.edit_calendar, color: AppColors.gold, size: 18),
+                    Icon(
+                      Icons.edit_calendar_rounded,
+                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -211,23 +222,27 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
             const SizedBox(height: 14),
             InkWell(
               onTap: _pickTime,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: inputBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.access_time, color: AppColors.gold, size: 20),
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Time',
-                          style: TextStyle(fontSize: 12, color: hintColor),
+                          style: TextStyle(fontSize: 12, color: subtitleColor),
                         ),
                         Text(
                           _selectedTime.format(context),
@@ -236,26 +251,34 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
                       ],
                     ),
                     const Spacer(),
-                    const Icon(Icons.edit, color: AppColors.gold, size: 18),
+                    Icon(
+                      Icons.edit_rounded,
+                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 14),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: inputBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.palette, color: AppColors.gold, size: 20),
+                      Icon(
+                        Icons.palette_rounded,
+                        color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
-                      Text('Color', style: TextStyle(fontSize: 12, color: hintColor)),
+                      Text('Color', style: TextStyle(fontSize: 12, color: subtitleColor)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -274,10 +297,18 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
                             color: _parseColor(opt.$1),
                             shape: BoxShape.circle,
                             border: isSelected
-                                ? Border.all(color: AppColors.gold, width: 3)
+                                ? Border.all(
+                                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                                    width: 3)
                                 : null,
                             boxShadow: isSelected
-                                ? [BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 8)]
+                                ? [
+                                    BoxShadow(
+                                      color: (isDark ? AppColors.darkAccent : AppColors.lightSecondary)
+                                          .withOpacity(0.3),
+                                      blurRadius: 8,
+                                    )
+                                  ]
                                 : null,
                           ),
                           child: isSelected
@@ -296,25 +327,35 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
               style: TextStyle(fontSize: 15, height: 1.5, color: textColor),
               decoration: InputDecoration(
                 hintText: 'Notes (optional)',
-                hintStyle: TextStyle(color: hintColor),
+                hintStyle: TextStyle(color: subtitleColor),
                 filled: true,
                 fillColor: inputBg,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(18),
               ),
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
             ),
             const SizedBox(height: 14),
-            SwitchListTile(
-              title: Text('Is Hearing', style: TextStyle(color: textColor)),
-              value: _isHearing,
-              onChanged: (v) => setState(() => _isHearing = v),
-              activeColor: AppColors.gold,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            PolishedCard(
+              padding: const EdgeInsets.all(8),
+              margin: EdgeInsets.zero,
+              child: SwitchListTile(
+                title: Text(
+                  'Is Hearing',
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                value: _isHearing,
+                onChanged: (v) => setState(() => _isHearing = v),
+                activeColor: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
             ),
           ],
         ),

@@ -97,28 +97,29 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.deepNavy : AppColors.lightBackground;
-    final textColor = isDark ? AppColors.white : AppColors.deepNavy;
-    final inputBg =
-        isDark ? AppColors.darkSurface : AppColors.white;
+    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
+    final accentColor = isDark ? AppColors.darkAccent : AppColors.lightSecondary;
+    final hintColor = isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.existingNote != null ? 'Edit Note' : 'New Note'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.check),
-            color: AppColors.gold,
+            icon: Icon(
+              Icons.check_rounded,
+              color: accentColor,
+            ),
             onPressed: _save,
           ),
         ],
       ),
       body: Container(
-        color: bgColor,
+        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             children: [
               TextFormField(
                 controller: _titleController,
@@ -129,9 +130,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 ),
                 decoration: InputDecoration(
                   hintText: 'Title',
-                  hintStyle: TextStyle(
-                    color: textColor.withOpacity(0.35),
-                  ),
+                  hintStyle: TextStyle(color: hintColor.withOpacity(0.5)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -148,9 +147,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 ),
                 decoration: InputDecoration(
                   hintText: 'Start typing your notes...',
-                  hintStyle: TextStyle(
-                    color: textColor.withOpacity(0.35),
-                  ),
+                  hintStyle: TextStyle(color: hintColor.withOpacity(0.5)),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -159,7 +156,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 24),
-              const Divider(height: 1),
+              Divider(color: isDark ? AppColors.darkDivider : AppColors.lightDivider),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -168,13 +165,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   ..._tags.map((tag) => Chip(
                         label: Text(
                           tag,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.white,
-                          ),
+                          style: const TextStyle(fontSize: 13, color: AppColors.white),
                         ),
-                        backgroundColor: AppColors.gold.withOpacity(0.7),
-                        deleteIcon: const Icon(Icons.close, size: 16, color: AppColors.white),
+                        backgroundColor: accentColor.withOpacity(0.7),
+                        deleteIcon: const Icon(Icons.close_rounded, size: 16, color: AppColors.white),
                         onDeleted: () => _removeTag(tag),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
@@ -184,14 +178,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     child: TextField(
                       controller: _tagController,
                       focusNode: _tagFocusNode,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: textColor,
-                      ),
+                      style: TextStyle(fontSize: 13, color: textColor),
                       decoration: InputDecoration(
                         hintText: 'Add tag...',
                         hintStyle: TextStyle(
-                          color: textColor.withOpacity(0.35),
+                          color: hintColor.withOpacity(0.5),
                           fontSize: 13,
                         ),
                         border: InputBorder.none,

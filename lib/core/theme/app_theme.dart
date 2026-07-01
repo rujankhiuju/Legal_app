@@ -8,45 +8,77 @@ class AppTheme {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: const ColorScheme.light(
-          primary: AppColors.darkBlue,
-          secondary: AppColors.gold,
-          surface: AppColors.white,
+          primary: AppColors.lightPrimary,
+          secondary: AppColors.lightSecondary,
+          surface: AppColors.lightSurface,
           onPrimary: AppColors.white,
-          onSecondary: AppColors.deepNavy,
-          onSurface: AppColors.deepNavy,
+          onSecondary: AppColors.white,
+          onSurface: AppColors.lightText,
         ),
         scaffoldBackgroundColor: AppColors.lightBackground,
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.white,
-          foregroundColor: AppColors.deepNavy,
+          backgroundColor: AppColors.lightSurface,
+          foregroundColor: AppColors.lightText,
           elevation: 0,
           centerTitle: true,
+          surfaceTintColor: Colors.transparent,
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: AppColors.white,
-          selectedItemColor: AppColors.gold,
-          unselectedItemColor: AppColors.darkBlue,
+          backgroundColor: AppColors.lightSurface,
+          selectedItemColor: AppColors.lightPrimary,
+          unselectedItemColor: AppColors.lightSubtitle,
           type: BottomNavigationBarType.fixed,
-          elevation: 8,
+          elevation: 0,
         ),
         cardTheme: CardTheme(
-          color: AppColors.white,
-          elevation: 2,
+          color: AppColors.lightCard,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
           ),
         ),
         switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return AppColors.gold;
-            return AppColors.darkBlue;
+            if (states.contains(WidgetState.selected)) return AppColors.lightSecondary;
+            return AppColors.lightSubtitle;
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.gold.withOpacity(0.4);
+              return AppColors.lightSecondary.withOpacity(0.4);
             }
-            return AppColors.darkBlue.withOpacity(0.3);
+            return AppColors.lightSubtitle.withOpacity(0.3);
           }),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.lightDivider,
+          thickness: 0.5,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.lightBackground,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+          hintStyle: TextStyle(color: AppColors.lightSubtitle.withOpacity(0.7)),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: AppColors.lightPrimary,
+          foregroundColor: AppColors.white,
+          elevation: 4,
+          shape: CircleBorder(),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        dialogTheme: DialogTheme(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: AppColors.lightPrimary,
+          selectionColor: AppColors.lightSecondary,
         ),
       );
 
@@ -54,45 +86,77 @@ class AppTheme {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: const ColorScheme.dark(
-          primary: AppColors.gold,
-          secondary: AppColors.darkBlue,
+          primary: AppColors.darkPrimary,
+          secondary: AppColors.darkSecondary,
           surface: AppColors.darkSurface,
-          onPrimary: AppColors.deepNavy,
-          onSecondary: AppColors.white,
-          onSurface: AppColors.white,
+          onPrimary: AppColors.darkBackground,
+          onSecondary: AppColors.darkBackground,
+          onSurface: AppColors.darkText,
         ),
-        scaffoldBackgroundColor: AppColors.deepNavy,
+        scaffoldBackgroundColor: AppColors.darkBackground,
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.darkSurface,
-          foregroundColor: AppColors.white,
+          foregroundColor: AppColors.darkText,
           elevation: 0,
           centerTitle: true,
+          surfaceTintColor: Colors.transparent,
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: AppColors.darkSurface,
-          selectedItemColor: AppColors.gold,
-          unselectedItemColor: AppColors.white,
+          selectedItemColor: AppColors.darkText,
+          unselectedItemColor: AppColors.darkSubtitle,
           type: BottomNavigationBarType.fixed,
-          elevation: 8,
+          elevation: 0,
         ),
         cardTheme: CardTheme(
-          color: AppColors.darkSurface,
-          elevation: 2,
+          color: AppColors.darkCard,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
           ),
         ),
         switchTheme: SwitchThemeData(
           thumbColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.selected)) return AppColors.gold;
-            return AppColors.white;
+            if (states.contains(WidgetState.selected)) return AppColors.darkAccent;
+            return AppColors.darkSubtitle;
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.gold.withOpacity(0.4);
+              return AppColors.darkAccent.withOpacity(0.4);
             }
-            return AppColors.white.withOpacity(0.3);
+            return AppColors.darkSubtitle.withOpacity(0.3);
           }),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.darkDivider,
+          thickness: 0.5,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.darkSurface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+          hintStyle: TextStyle(color: AppColors.darkSubtitle.withOpacity(0.7)),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: AppColors.darkBackground,
+          elevation: 4,
+          shape: CircleBorder(),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        dialogTheme: DialogTheme(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: AppColors.darkPrimary,
+          selectionColor: AppColors.darkSecondary,
         ),
       );
 }
