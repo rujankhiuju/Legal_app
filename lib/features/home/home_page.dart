@@ -25,8 +25,7 @@ class HomePage extends ConsumerWidget {
     final textColor = isDark ? AppColors.darkText : AppColors.lightText;
     final subtitleColor = isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle;
 
-    ref.listen(updateCheckerProvider, (prev, next) {});
-    ref.read(updateCheckerProvider.notifier).checkForUpdate();
+    Future.microtask(() => ref.read(updateCheckerProvider.notifier).checkForUpdate());
 
     return Scaffold(
       body: Container(

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../shared/widgets/polished_card.dart';
 import '../../shared/widgets/pill_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../home/model/advocate_profile.dart';
 import '../home/providers/advocate_provider.dart';
 
@@ -223,7 +224,69 @@ class SettingsPage extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          _SectionHeader(title: 'Support', isDark: isDark),
+          const SizedBox(height: 8),
+          PolishedCard(
+            padding: const EdgeInsets.all(4),
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkAccent.withOpacity(0.12)
+                      : AppColors.lightSecondary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.feedback_rounded,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                'Send Feedback',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                'Email us your suggestions',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () async {
+                final uri = Uri(
+                  scheme: 'mailto',
+                  path: 'rujan@khiujulaw.com',
+                  queryParameters: {
+                    'subject': 'Nepali Legal Assistant Feedback',
+                    'body': 'Hello Rujan,\n\n',
+                  },
+                );
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              },
+            ),
+          ),
           const SizedBox(height: 32),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                '© ${DateTime.now().year} Rujan Khiuju. All rights reserved.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
