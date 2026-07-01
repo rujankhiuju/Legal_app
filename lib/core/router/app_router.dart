@@ -36,10 +36,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/${RouteNames.home}',
               name: RouteNames.home,
-              pageBuilder: (context, state) => _cupertinoPage(
-                const HomePage(),
-                state,
-              ),
+              builder: (context, state) => const HomePage(),
             ),
           ],
         ),
@@ -48,21 +45,15 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/${RouteNames.ruleBook}',
               name: RouteNames.ruleBook,
-              pageBuilder: (context, state) => _cupertinoPage(
-                const RuleBookPage(),
-                state,
-              ),
+              builder: (context, state) => const RuleBookPage(),
               routes: [
                 GoRoute(
                   path: ':docId',
                   name: '${RouteNames.ruleBook}Detail',
                   parentNavigatorKey: _rootNavigatorKey,
-                  pageBuilder: (context, state) {
+                  builder: (context, state) {
                     final docId = state.pathParameters['docId']!;
-                    return _cupertinoPage(
-                      RuleBookDetailPage(docId: docId),
-                      state,
-                    );
+                    return RuleBookDetailPage(docId: docId);
                   },
                 ),
               ],
@@ -74,21 +65,15 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/${RouteNames.notes}',
               name: RouteNames.notes,
-              pageBuilder: (context, state) => _cupertinoPage(
-                const NotesPage(),
-                state,
-              ),
+              builder: (context, state) => const NotesPage(),
               routes: [
                 GoRoute(
                   path: 'editor',
                   name: RouteNames.notesEditor,
                   parentNavigatorKey: _rootNavigatorKey,
-                  pageBuilder: (context, state) {
+                  builder: (context, state) {
                     final existing = state.extra as CaseNote?;
-                    return _cupertinoPage(
-                      NoteEditorPage(existingNote: existing),
-                      state,
-                    );
+                    return NoteEditorPage(existingNote: existing);
                   },
                 ),
               ],
@@ -100,19 +85,13 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/${RouteNames.calendar}',
               name: RouteNames.calendar,
-              pageBuilder: (context, state) => _cupertinoPage(
-                const CalendarPage(),
-                state,
-              ),
+              builder: (context, state) => const CalendarPage(),
               routes: [
                 GoRoute(
                   path: 'add',
                   name: RouteNames.addHearing,
                   parentNavigatorKey: _rootNavigatorKey,
-                  pageBuilder: (context, state) => _cupertinoPage(
-                    const AddHearingPage(),
-                    state,
-                  ),
+                  builder: (context, state) => const AddHearingPage(),
                 ),
               ],
             ),
@@ -123,10 +102,7 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/${RouteNames.more}',
               name: RouteNames.more,
-              pageBuilder: (context, state) => _cupertinoPage(
-                const MorePage(),
-                state,
-              ),
+              builder: (context, state) => const MorePage(),
             ),
           ],
         ),
@@ -136,93 +112,49 @@ final appRouter = GoRouter(
       path: '/${RouteNames.settings}',
       name: RouteNames.settings,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) => _cupertinoPage(
-        const SettingsPage(),
-        state,
-      ),
+      builder: (context, state) => const SettingsPage(),
     ),
     GoRoute(
       path: '/${RouteNames.reminders}',
       name: RouteNames.reminders,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) => _cupertinoPage(
-        const RemindersPage(),
-        state,
-      ),
+      builder: (context, state) => const RemindersPage(),
     ),
     GoRoute(
       path: '/${RouteNames.scanner}',
       name: RouteNames.scanner,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) => _cupertinoPage(
-        const ScannerScreen(),
-        state,
-      ),
+      builder: (context, state) => const ScannerScreen(),
     ),
     GoRoute(
       path: '/${RouteNames.editScan}',
       name: RouteNames.editScan,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) {
+      builder: (context, state) {
         final path = state.extra as String;
-        return _cupertinoPage(
-          EditScanScreen(imagePath: path),
-          state,
-        );
+        return EditScanScreen(imagePath: path);
       },
     ),
     GoRoute(
       path: '/${RouteNames.pdfGenerate}',
       name: RouteNames.pdfGenerate,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) => _cupertinoPage(
-        const PdfGenerateScreen(),
-        state,
-      ),
+      builder: (context, state) => const PdfGenerateScreen(),
     ),
     GoRoute(
       path: '/${RouteNames.pdfLibrary}',
       name: RouteNames.pdfLibrary,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) => _cupertinoPage(
-        const PdfLibraryScreen(),
-        state,
-      ),
+      builder: (context, state) => const PdfLibraryScreen(),
     ),
     GoRoute(
       path: '/${RouteNames.pdfViewer}',
       name: RouteNames.pdfViewer,
       parentNavigatorKey: _rootNavigatorKey,
-      pageBuilder: (context, state) {
+      builder: (context, state) {
         final doc = state.extra as PdfDocument;
-        return _cupertinoPage(
-          PdfViewerScreen(doc: doc),
-          state,
-        );
+        return PdfViewerScreen(doc: doc);
       },
     ),
   ],
 );
-
-Page _cupertinoPage(Widget child, GoRouterState state) {
-  return CustomTransitionPage(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return CupertinoPageTransitionsBuilder().buildTransitions<dynamic>(
-        _dummyRoute(context),
-        context,
-        animation,
-        secondaryAnimation,
-        child,
-      );
-    },
-  );
-}
-
-PageRoute<dynamic> _dummyRoute(BuildContext context) {
-  return PageRouteBuilder<dynamic>(
-    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
-    settings: const RouteSettings(),
-  );
-}
