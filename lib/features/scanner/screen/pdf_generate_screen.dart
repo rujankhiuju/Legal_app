@@ -124,7 +124,7 @@ class _PdfGenerateScreenState extends ConsumerState<PdfGenerateScreen> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textColor),
                 decoration: InputDecoration(
                   hintText: 'Document title',
-                  hintStyle: TextStyle(color: textColor.withValues(alpha: 0.35)),
+                  hintStyle: TextStyle(color: textColor.withOpacity(0.35)),
                   filled: true,
                   fillColor: inputBg,
                   border: OutlineInputBorder(
@@ -144,7 +144,7 @@ class _PdfGenerateScreenState extends ConsumerState<PdfGenerateScreen> {
                   const SizedBox(width: 6),
                   Text(
                     '${imagePaths.length} page${imagePaths.length > 1 ? 's' : ''}',
-                    style: TextStyle(color: textColor.withValues(alpha: 0.7)),
+                    style: TextStyle(color: textColor.withOpacity(0.7)),
                   ),
                   const Spacer(),
                   TextButton.icon(

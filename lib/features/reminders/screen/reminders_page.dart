@@ -30,14 +30,14 @@ class RemindersPage extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle_outline,
-                        size: 72, color: AppColors.gold.withValues(alpha: 0.4)),
+                        size: 72, color: AppColors.gold.withOpacity(0.4)),
                     const SizedBox(height: 16),
                     Text(
                       'All caught up!',
                       style: TextStyle(
                         color: isDark
-                            ? AppColors.white.withValues(alpha: 0.7)
-                            : AppColors.deepNavy.withValues(alpha: 0.7),
+                            ? AppColors.white.withOpacity(0.7)
+                            : AppColors.deepNavy.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -159,14 +159,14 @@ class _ReminderCard extends ConsumerWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: overdue ? Colors.redAccent.withValues(alpha: 0.4) : color.withValues(alpha: 0.2),
+          color: overdue ? Colors.redAccent.withOpacity(0.4) : color.withOpacity(0.2),
           width: overdue ? 1.5 : 1,
         ),
       ),
       child: Card(
         margin: EdgeInsets.zero,
         elevation: 0,
-        color: overdue ? Colors.redAccent.withValues(alpha: 0.06) : cardBg,
+        color: overdue ? Colors.redAccent.withOpacity(0.06) : cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -178,7 +178,7 @@ class _ReminderCard extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.15),
+                      color: color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -197,7 +197,7 @@ class _ReminderCard extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: overdue ? Colors.redAccent : textColor.withValues(alpha: 0.6),
+                      color: overdue ? Colors.redAccent : textColor.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -217,7 +217,7 @@ class _ReminderCard extends ConsumerWidget {
                   reminder.note,
                   style: TextStyle(
                     fontSize: 13,
-                    color: textColor.withValues(alpha: 0.65),
+                    color: textColor.withOpacity(0.65),
                   ),
                 ),
               ],
@@ -289,7 +289,7 @@ class _ActionChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            border: Border.all(color: color.withValues(alpha: 0.4)),
+            border: Border.all(color: color.withOpacity(0.4)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(

@@ -43,9 +43,9 @@ class AppTheme {
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.gold.withValues(alpha: 0.4);
+              return AppColors.gold.withOpacity(0.4);
             }
-            return AppColors.darkBlue.withValues(alpha: 0.3);
+            return AppColors.darkBlue.withOpacity(0.3);
           }),
         ),
       );
@@ -89,9 +89,9 @@ class AppTheme {
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return AppColors.gold.withValues(alpha: 0.4);
+              return AppColors.gold.withOpacity(0.4);
             }
-            return AppColors.white.withValues(alpha: 0.3);
+            return AppColors.white.withOpacity(0.3);
           }),
         ),
       );

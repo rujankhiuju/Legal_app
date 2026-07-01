@@ -55,7 +55,7 @@ class _EditScanScreenState extends ConsumerState<EditScanScreen> {
     if (_originalImage == null) return;
     var image = img.Image.from(_originalImage!);
     for (int i = 0; i < _rotation % 4; i++) {
-      image = img.copyRotate(image, 90);
+      image = img.copyRotate(image, angle: 90);
     }
     if (_isGrayscale) {
       image = img.grayscale(image);
@@ -220,7 +220,7 @@ class _ToolButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: active ? AppColors.gold : AppColors.white.withValues(alpha: 0.15),
+              color: active ? AppColors.gold : AppColors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -234,7 +234,7 @@ class _ToolButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: active ? AppColors.gold : AppColors.white.withValues(alpha: 0.7),
+              color: active ? AppColors.gold : AppColors.white.withOpacity(0.7),
             ),
           ),
         ],

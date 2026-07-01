@@ -39,13 +39,13 @@ class PdfLibraryScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.picture_as_pdf, size: 72, color: AppColors.gold.withValues(alpha: 0.4)),
+                    Icon(Icons.picture_as_pdf, size: 72, color: AppColors.gold.withOpacity(0.4)),
                     const SizedBox(height: 16),
                     Text('No PDFs yet',
                       style: TextStyle(
                         color: isDark
-                            ? AppColors.white.withValues(alpha: 0.7)
-                            : AppColors.deepNavy.withValues(alpha: 0.7),
+                            ? AppColors.white.withOpacity(0.7)
+                            : AppColors.deepNavy.withOpacity(0.7),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -102,7 +102,7 @@ class _PdfCard extends ConsumerWidget {
           width: 44,
           height: 52,
           decoration: BoxDecoration(
-            color: AppColors.gold.withValues(alpha: 0.12),
+            color: AppColors.gold.withOpacity(0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.picture_as_pdf, color: AppColors.gold, size: 26),
@@ -115,10 +115,10 @@ class _PdfCard extends ConsumerWidget {
         ),
         subtitle: Text(
           '${doc.pageCount} page${doc.pageCount > 1 ? 's' : ''} · ${_formatDate(doc.createdAt)}',
-          style: TextStyle(fontSize: 12, color: textColor.withValues(alpha: 0.6)),
+          style: TextStyle(fontSize: 12, color: textColor.withOpacity(0.6)),
         ),
         trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: textColor.withValues(alpha: 0.6)),
+          icon: Icon(Icons.more_vert, color: textColor.withOpacity(0.6)),
           onSelected: (action) => _handleAction(context, ref, action),
           itemBuilder: (_) => [
             const PopupMenuItem(value: 'view', child: ListTile(

@@ -37,8 +37,8 @@ class SettingsPage extends ConsumerWidget {
                     isNepali ? 'नेपाली' : 'English',
                     style: TextStyle(
                       color: isDark
-                          ? AppColors.white.withValues(alpha: 0.7)
-                          : AppColors.deepNavy.withValues(alpha: 0.7),
+                          ? AppColors.white.withOpacity(0.7)
+                          : AppColors.deepNavy.withOpacity(0.7),
                     ),
                   ),
                   secondary: Icon(

@@ -234,7 +234,7 @@ class _CalendarWidget extends StatelessWidget {
           ),
           formatButtonTextStyle: const TextStyle(color: AppColors.gold),
           formatButtonDecoration: BoxDecoration(
-            color: AppColors.gold.withValues(alpha: 0.15),
+            color: AppColors.gold.withOpacity(0.15),
             borderRadius: BorderRadius.circular(8),
           ),
           leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.gold),
@@ -247,7 +247,7 @@ class _CalendarWidget extends StatelessWidget {
           ),
           selectedTextStyle: const TextStyle(color: AppColors.deepNavy, fontWeight: FontWeight.bold),
           todayDecoration: BoxDecoration(
-            color: AppColors.gold.withValues(alpha: 0.3),
+            color: AppColors.gold.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
           todayTextStyle: TextStyle(
@@ -256,10 +256,10 @@ class _CalendarWidget extends StatelessWidget {
           ),
           defaultTextStyle: TextStyle(color: isDark ? AppColors.white : AppColors.deepNavy),
           weekendTextStyle: TextStyle(
-            color: isDark ? AppColors.white.withValues(alpha: 0.6) : AppColors.deepNavy.withValues(alpha: 0.6),
+            color: isDark ? AppColors.white.withOpacity(0.6) : AppColors.deepNavy.withOpacity(0.6),
           ),
           outsideTextStyle: TextStyle(
-            color: isDark ? AppColors.white.withValues(alpha: 0.3) : AppColors.deepNavy.withValues(alpha: 0.3),
+            color: isDark ? AppColors.white.withOpacity(0.3) : AppColors.deepNavy.withOpacity(0.3),
           ),
           markerDecoration: const BoxDecoration(
             color: AppColors.gold,
@@ -382,10 +382,10 @@ class _EventCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.08),
+              color: color.withOpacity(0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -419,7 +419,7 @@ class _EventCard extends StatelessWidget {
                     event.caseName,
                     style: TextStyle(
                       fontSize: 13,
-                      color: textColor.withValues(alpha: 0.7),
+                      color: textColor.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -430,7 +430,7 @@ class _EventCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: textColor.withValues(alpha: 0.6),
+                color: textColor.withOpacity(0.6),
               ),
             ),
           ],
@@ -463,9 +463,9 @@ class _AgendaList extends ConsumerWidget {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.event_busy, size: 64, color: AppColors.gold.withValues(alpha: 0.4)),
+              Icon(Icons.event_busy, size: 64, color: AppColors.gold.withOpacity(0.4)),
               const SizedBox(height: 16),
-              Text('No events scheduled', style: TextStyle(color: textColor.withValues(alpha: 0.6))),
+              Text('No events scheduled', style: TextStyle(color: textColor.withOpacity(0.6))),
             ],
           ),
         ),

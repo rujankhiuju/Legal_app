@@ -18,7 +18,7 @@ class HomePage extends ConsumerWidget {
     final bgColor = isDark ? AppColors.deepNavy : AppColors.lightBackground;
     final textColor = isDark ? AppColors.white : AppColors.deepNavy;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final subtitleColor = textColor.withValues(alpha: 0.6);
+    final subtitleColor = textColor.withOpacity(0.6);
 
     return Scaffold(
       body: Container(
@@ -84,7 +84,7 @@ class _WelcomeHeader extends StatelessWidget {
             'Welcome back,',
             style: TextStyle(
               fontSize: 16,
-              color: textColor.withValues(alpha: 0.6),
+              color: textColor.withOpacity(0.6),
             ),
           ),
           const SizedBox(height: 4),
@@ -123,7 +123,7 @@ class _PendingRemindersBadge extends ConsumerWidget {
         gradient: LinearGradient(
           colors: isDark
               ? [AppColors.darkBlue, AppColors.darkSurface]
-              : [AppColors.darkBlue, AppColors.darkBlue.withValues(alpha: 0.85)],
+              : [AppColors.darkBlue, AppColors.darkBlue.withOpacity(0.85)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -134,7 +134,7 @@ class _PendingRemindersBadge extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.gold.withValues(alpha: 0.2),
+              color: AppColors.gold.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.notifications_active, color: AppColors.gold, size: 22),
@@ -156,7 +156,7 @@ class _PendingRemindersBadge extends ConsumerWidget {
                 Text(
                   'Upcoming court events and hearings',
                   style: TextStyle(
-                    color: AppColors.white.withValues(alpha: 0.7),
+                    color: AppColors.white.withOpacity(0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -247,7 +247,7 @@ class _UpcomingHearings extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.event_busy, color: AppColors.gold.withValues(alpha: 0.4)),
+              Icon(Icons.event_busy, color: AppColors.gold.withOpacity(0.4)),
               const SizedBox(width: 12),
               Text('No upcoming hearings', style: TextStyle(color: subtitleColor)),
             ],
@@ -277,7 +277,7 @@ class _UpcomingHearings extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: cardBg,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                  border: Border.all(color: color.withOpacity(0.3)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,7 +359,7 @@ class _RecentNotesList extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.note_add_outlined, color: AppColors.gold.withValues(alpha: 0.4)),
+              Icon(Icons.note_add_outlined, color: AppColors.gold.withOpacity(0.4)),
               const SizedBox(width: 12),
               Text('No notes yet', style: TextStyle(color: subtitleColor)),
             ],
@@ -428,7 +428,7 @@ class _NoteMiniCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.gold.withValues(alpha: 0.12),
+                color: AppColors.gold.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.sticky_note_2, color: AppColors.gold, size: 18),

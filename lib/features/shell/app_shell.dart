@@ -25,7 +25,7 @@ class AppShell extends ConsumerWidget {
             isDark ? AppColors.darkSurface : AppColors.white,
         selectedItemColor: AppColors.gold,
         unselectedItemColor:
-            isDark ? AppColors.white.withValues(alpha: 0.6) : AppColors.darkBlue,
+            isDark ? AppColors.white.withOpacity(0.6) : AppColors.darkBlue,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
         items: [

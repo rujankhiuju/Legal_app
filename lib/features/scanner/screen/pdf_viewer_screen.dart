@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 import '../../../core/theme/app_colors.dart';
 import '../model/pdf_document.dart';
 import '../providers/scanner_provider.dart';
@@ -98,7 +99,7 @@ class PdfViewerScreen extends ConsumerWidget {
         ],
       ),
       body: PdfPreview(
-        pdfFile: doc.filePath as dynamic,
+        build: (format) async => File(doc.filePath).readAsBytes(),
         canChangeOrientation: false,
         canSwapPage: false,
         pageWidth: 400,

@@ -96,7 +96,7 @@ class _SearchBar extends StatelessWidget {
               : null,
           filled: true,
           fillColor: isDark
-              ? AppColors.deepNavy.withValues(alpha: 0.6)
+              ? AppColors.deepNavy.withOpacity(0.6)
               : AppColors.lightBackground,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -191,15 +191,15 @@ class _EmptyState extends StatelessWidget {
           Icon(
             query.isEmpty ? Icons.note_add_outlined : Icons.search_off,
             size: 72,
-            color: AppColors.gold.withValues(alpha: 0.5),
+            color: AppColors.gold.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             query.isEmpty ? 'No notes yet' : 'No results for "$query"',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: isDark
-                      ? AppColors.white.withValues(alpha: 0.7)
-                      : AppColors.deepNavy.withValues(alpha: 0.7),
+                      ? AppColors.white.withOpacity(0.7)
+                      : AppColors.deepNavy.withOpacity(0.7),
                 ),
           ),
           if (query.isEmpty) ...[
@@ -245,8 +245,8 @@ class _SectionHeader extends StatelessWidget {
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
               color: isDark
-                  ? AppColors.white.withValues(alpha: 0.7)
-                  : AppColors.deepNavy.withValues(alpha: 0.7),
+                  ? AppColors.white.withOpacity(0.7)
+                  : AppColors.deepNavy.withOpacity(0.7),
             ),
           ),
         ],
@@ -323,7 +323,7 @@ class _NoteCard extends ConsumerWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
               side: note.pinned
-                  ? BorderSide(color: AppColors.gold.withValues(alpha: 0.4))
+                  ? BorderSide(color: AppColors.gold.withOpacity(0.4))
                   : BorderSide.none,
             ),
             child: InkWell(
@@ -373,8 +373,8 @@ class _NoteCard extends ConsumerWidget {
                                 fontSize: 13,
                                 height: 1.4,
                                 color: isDark
-                                    ? AppColors.white.withValues(alpha: 0.6)
-                                    : AppColors.deepNavy.withValues(alpha: 0.6),
+                                    ? AppColors.white.withOpacity(0.6)
+                                    : AppColors.deepNavy.withOpacity(0.6),
                               ),
                             ),
                           ],
@@ -388,7 +388,7 @@ class _NoteCard extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold.withValues(alpha: 0.12),
+                                    color: AppColors.gold.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
@@ -412,8 +412,8 @@ class _NoteCard extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 11,
                         color: isDark
-                            ? AppColors.white.withValues(alpha: 0.4)
-                            : AppColors.deepNavy.withValues(alpha: 0.4),
+                            ? AppColors.white.withOpacity(0.4)
+                            : AppColors.deepNavy.withOpacity(0.4),
                       ),
                     ),
                   ],

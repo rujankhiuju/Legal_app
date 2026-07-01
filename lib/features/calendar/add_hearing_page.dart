@@ -125,7 +125,7 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.white : AppColors.deepNavy;
     final inputBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final hintColor = textColor.withValues(alpha: 0.35);
+    final hintColor = textColor.withOpacity(0.35);
 
     return Scaffold(
       appBar: AppBar(
@@ -277,7 +277,7 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
                                 ? Border.all(color: AppColors.gold, width: 3)
                                 : null,
                             boxShadow: isSelected
-                                ? [BoxShadow(color: AppColors.gold.withValues(alpha: 0.3), blurRadius: 8)]
+                                ? [BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 8)]
                                 : null,
                           ),
                           child: isSelected

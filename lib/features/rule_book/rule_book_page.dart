@@ -86,7 +86,7 @@ class _SearchBar extends StatelessWidget {
               : null,
           filled: true,
           fillColor: isDark
-              ? AppColors.deepNavy.withValues(alpha: 0.6)
+              ? AppColors.deepNavy.withOpacity(0.6)
               : AppColors.lightBackground,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -118,12 +118,12 @@ class _DocumentList extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.search_off, size: 64, color: AppColors.gold.withValues(alpha: 0.5)),
+                Icon(Icons.search_off, size: 64, color: AppColors.gold.withOpacity(0.5)),
                 const SizedBox(height: 16),
                 Text(
                   query.isEmpty ? 'No documents available' : 'No results for "$query"',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: isDark ? AppColors.white.withValues(alpha: 0.7) : AppColors.deepNavy.withValues(alpha: 0.7),
+                        color: isDark ? AppColors.white.withOpacity(0.7) : AppColors.deepNavy.withOpacity(0.7),
                       ),
                 ),
               ],
@@ -178,7 +178,7 @@ class _RecentSection extends ConsumerWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: isDark ? AppColors.white.withValues(alpha: 0.8) : AppColors.deepNavy,
+                      color: isDark ? AppColors.white.withOpacity(0.8) : AppColors.deepNavy,
                     ),
                   ),
                 ],
@@ -225,7 +225,7 @@ class _RecentCard extends ConsumerWidget {
           color: bg,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.gold.withValues(alpha: 0.3),
+            color: AppColors.gold.withOpacity(0.3),
           ),
         ),
         padding: const EdgeInsets.all(12),
@@ -281,7 +281,7 @@ class _CategoryHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: AppColors.gold.withValues(alpha: 0.15),
+              color: AppColors.gold.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -333,7 +333,7 @@ class _DocumentCard extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withValues(alpha: 0.12),
+                      color: AppColors.gold.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(Icons.gavel, color: AppColors.gold, size: 22),
@@ -361,8 +361,8 @@ class _DocumentCard extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark
-                                ? AppColors.white.withValues(alpha: 0.6)
-                                : AppColors.deepNavy.withValues(alpha: 0.6),
+                                ? AppColors.white.withOpacity(0.6)
+                                : AppColors.deepNavy.withOpacity(0.6),
                           ),
                         ),
                       ],

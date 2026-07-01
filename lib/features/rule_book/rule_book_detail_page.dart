@@ -52,8 +52,8 @@ class _DetailContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textColor = isDark ? AppColors.white : AppColors.deepNavy;
     final subtitleColor = isDark
-        ? AppColors.white.withValues(alpha: 0.7)
-        : AppColors.deepNavy.withValues(alpha: 0.7);
+        ? AppColors.white.withOpacity(0.7)
+        : AppColors.deepNavy.withOpacity(0.7);
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
 
     return Scaffold(
@@ -72,7 +72,7 @@ class _DetailContent extends ConsumerWidget {
                       end: Alignment.bottomRight,
                       colors: isDark
                           ? [AppColors.darkBlue, AppColors.deepNavy]
-                          : [AppColors.darkBlue, AppColors.darkBlue.withValues(alpha: 0.8)],
+                          : [AppColors.darkBlue, AppColors.darkBlue.withOpacity(0.8)],
                     ),
                   ),
                   child: SafeArea(
@@ -86,7 +86,7 @@ class _DetailContent extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: AppColors.gold.withValues(alpha: 0.2),
+                              color: AppColors.gold.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -111,7 +111,7 @@ class _DetailContent extends ConsumerWidget {
                           Text(
                             doc.titleNp,
                             style: TextStyle(
-                              color: AppColors.white.withValues(alpha: 0.85),
+                              color: AppColors.white.withOpacity(0.85),
                               fontSize: 16,
                             ),
                           ),
@@ -213,7 +213,7 @@ class _DetailContent extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppColors.gold.withValues(alpha: 0.12),
+                            color: AppColors.gold.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -289,7 +289,7 @@ class _ContentSection extends StatelessWidget {
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.gold.withValues(alpha: 0.15),
+            color: AppColors.gold.withOpacity(0.15),
           ),
         ),
         child: Column(

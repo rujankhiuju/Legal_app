@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,9 +39,9 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_controller == null || !_controller!.value.isInitialized) return;
-    if (state == AppLifecycleState.inactiveResume) {
+    if (state == AppLifecycleState.resumed) {
       _controller?.resumePreview();
-    } else if (state == AppLifecycleState.inactiveSuspend) {
+    } else if (state == AppLifecycleState.inactive) {
       _controller?.pausePreview();
     }
   }

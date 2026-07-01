@@ -130,7 +130,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 decoration: InputDecoration(
                   hintText: 'Title',
                   hintStyle: TextStyle(
-                    color: textColor.withValues(alpha: 0.35),
+                    color: textColor.withOpacity(0.35),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
@@ -149,7 +149,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 decoration: InputDecoration(
                   hintText: 'Start typing your notes...',
                   hintStyle: TextStyle(
-                    color: textColor.withValues(alpha: 0.35),
+                    color: textColor.withOpacity(0.35),
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
@@ -173,7 +173,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                             color: AppColors.white,
                           ),
                         ),
-                        backgroundColor: AppColors.gold.withValues(alpha: 0.7),
+                        backgroundColor: AppColors.gold.withOpacity(0.7),
                         deleteIcon: const Icon(Icons.close, size: 16, color: AppColors.white),
                         onDeleted: () => _removeTag(tag),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -191,7 +191,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                       decoration: InputDecoration(
                         hintText: 'Add tag...',
                         hintStyle: TextStyle(
-                          color: textColor.withValues(alpha: 0.35),
+                          color: textColor.withOpacity(0.35),
                           fontSize: 13,
                         ),
                         border: InputBorder.none,
