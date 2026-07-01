@@ -28,6 +28,9 @@ dependencies:
   printing: ^5.14.2
   share_plus: ^10.1.4
 
+dependency_overrides:
+  camera_android_camerax: 0.7.0+1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
