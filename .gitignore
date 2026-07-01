@@ -1,0 +1,21 @@
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+linked_*.dsym
+linked_*.dsym.zip
+.united_debug/
+.idea/
+*.iml
+*.lock
+*.swp
+*.swo
+.vscode/
+coverage/
+*.g.dart
+*.freezed.dart
+.dart_tool/

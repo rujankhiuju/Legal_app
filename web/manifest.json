@@ -1,0 +1,10 @@
+{
+  "name": "Legal Assistant",
+  "short_name": "LegalAssistant",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0A192F",
+  "theme_color": "#0A192F",
+  "description": "Court case management app for Nepali legal professionals",
+  "orientation": "portrait-primary"
+}
