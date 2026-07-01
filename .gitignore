@@ -19,3 +19,15 @@ coverage/
 *.g.dart
 *.freezed.dart
 .dart_tool/
+.gradle/
+local.properties
+*.jar
+*.h
+*.m
+ios/Flutter/
+android/app/src/main/java/
+android/.gradle/
+android/gradlew
+android/gradlew.bat
+android/gradle/wrapper/gradle-wrapper.jar
+android/local.properties
