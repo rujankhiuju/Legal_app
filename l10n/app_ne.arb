@@ -49,7 +49,7 @@
   "setupSubtitle": "सुरु गर्न आफ्नो प्रोफाइल बनाउनुहोस्",
   "firstName": "पहिलो नाम",
   "lastName": "थर",
-  "continue": "जारी राख्नुहोस्",
+  "continueAction": "जारी राख्नुहोस्",
   "setPin": "PIN सेट गर्नुहोस्",
   "pinSubtitle": "द्रुत पहुँचको लागि ४-६ अङ्कको PIN प्रविष्ट गर्नुहोस्",
   "createAccount": "खाता बनाउनुहोस्",

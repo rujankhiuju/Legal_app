@@ -49,7 +49,7 @@
   "setupSubtitle": "Create your profile to get started",
   "firstName": "First Name",
   "lastName": "Last Name",
-  "continue": "Continue",
+  "continueAction": "Continue",
   "setPin": "Set Your PIN",
   "pinSubtitle": "Enter a 4-6 digit PIN for quick access",
   "createAccount": "Create Account",

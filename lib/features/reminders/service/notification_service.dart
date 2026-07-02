@@ -73,7 +73,7 @@ class NotificationService {
       enableVibration: true,
       channelShowBadge: true,
       enableLights: true,
-      ledColor: 0xFFFF3B30,
+      ledColor: Color(0xFFFF3B30),
       ledOnMs: 1000,
       ledOffMs: 500,
     );

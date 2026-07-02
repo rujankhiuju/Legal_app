@@ -66,7 +66,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final locale = ref.watch(localeProvider);
     final themeMode = ref.watch(themeModeProvider);
@@ -130,7 +130,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: user?.isGuest == true
                   ? null
-                  : () => _showEditNameDialog(context, ref, user!),
+                  : () => _showEditNameDialog(user!),
             ),
           ),
           const SizedBox(height: 24),

@@ -6,6 +6,7 @@ import '../../../shared/widgets/staggered_animation.dart';
 import '../../../shared/widgets/polished_card.dart';
 import '../model/reminder.dart';
 import '../providers/reminder_provider.dart';
+import '../service/notification_service.dart';
 
 class RemindersPage extends ConsumerStatefulWidget {
   const RemindersPage({super.key});
