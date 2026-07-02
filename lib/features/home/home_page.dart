@@ -9,6 +9,7 @@ import '../../shared/widgets/staggered_animation.dart';
 import '../../shared/widgets/polished_card.dart';
 import '../../shared/widgets/pill_button.dart';
 import '../../shared/services/update_checker.dart';
+import '../../providers/auth_provider.dart';
 import '../calendar/model/court_event.dart';
 import '../notes/model/case_note.dart';
 import 'model/advocate_profile.dart';
@@ -80,6 +81,9 @@ class _AdvocateHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final isGuest = user?.isGuest ?? true;
     final profileAsync = ref.watch(advocateProfileProvider);
     final defaultProfile = ref.watch(defaultAdvocateProvider);
 
@@ -137,7 +141,7 @@ class _AdvocateHeader extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome back,',
+                      isGuest ? 'Welcome, Guest' : 'Welcome back,',
                       style: TextStyle(
                         fontSize: 14,
                         color: subtitleColor,
@@ -145,20 +149,34 @@ class _AdvocateHeader extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      profile.name,
+                      isGuest ? profile.name : user!.fullName,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: textColor,
                       ),
                     ),
-                    if (profile.specialization.isNotEmpty) ...[
+                    if (!isGuest && profile.specialization.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         profile.specialization,
                         style: TextStyle(
                           fontSize: 13,
                           color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                        ),
+                      ),
+                    ],
+                    if (isGuest) ...[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => context.pushNamed('setup'),
+                        child: Text(
+                          'Create an account to unlock all features',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                       ),
                     ],

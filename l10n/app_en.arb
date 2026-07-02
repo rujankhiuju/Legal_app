@@ -1,75 +1,92 @@
 {
   "@@locale": "en",
-  "appTitle": "Legal App",
-  "@appTitle": {
-    "description": "The title of the application"
-  },
+  "appTitle": "Nepali Legal Assistant",
   "home": "Home",
-  "@home": {
-    "description": "Home tab label"
-  },
   "ruleBook": "Rule Book",
-  "@ruleBook": {
-    "description": "Rule Book tab label"
-  },
   "notes": "Notes",
-  "@notes": {
-    "description": "Notes tab label"
-  },
   "calendar": "Calendar",
-  "@calendar": {
-    "description": "Calendar tab label"
-  },
   "more": "More",
-  "@more": {
-    "description": "More tab label"
-  },
   "settings": "Settings",
-  "@settings": {
-    "description": "Settings page title"
-  },
   "language": "Language",
-  "@language": {
-    "description": "Language setting label"
-  },
   "english": "English",
-  "@english": {
-    "description": "English language option"
-  },
   "nepali": "Nepali",
-  "@nepali": {
-    "description": "Nepali language option"
-  },
   "darkMode": "Dark Mode",
-  "@darkMode": {
-    "description": "Dark mode toggle label"
-  },
   "lightMode": "Light Mode",
-  "@lightMode": {
-    "description": "Light mode toggle label"
-  },
   "homeTitle": "Welcome",
-  "@homeTitle": {
-    "description": "Home page title"
-  },
   "homeSubtitle": "Your legal companion app",
-  "@homeSubtitle": {
-    "description": "Home page subtitle"
-  },
+  "welcomeBack": "Welcome back,",
+  "welcomeGuest": "Welcome, Guest",
+  "createAccountPrompt": "Create an account to unlock all features",
+  "upcomingHearings": "Upcoming Hearings",
+  "recentNotes": "Recent Notes",
+  "noHearings": "No upcoming hearings",
+  "noNotes": "No recent notes",
   "ruleBookTitle": "Rule Book",
-  "@ruleBookTitle": {
-    "description": "Rule Book page title"
-  },
+  "searchLaws": "Search laws...",
+  "noDocuments": "No documents found",
+  "category": "Category",
   "notesTitle": "Notes",
-  "@notesTitle": {
-    "description": "Notes page title"
-  },
+  "newNote": "New Note",
+  "searchNotes": "Search notes...",
+  "noNotesYet": "No notes yet",
   "calendarTitle": "Calendar",
-  "@calendarTitle": {
-    "description": "Calendar page title"
-  },
+  "today": "Today",
+  "addHearing": "Add Hearing",
+  "noEvents": "No events for this day",
   "moreTitle": "More",
-  "@moreTitle": {
-    "description": "More page title"
-  }
+  "documentScanner": "Document Scanner",
+  "pdfLibrary": "PDF Library",
+  "reminders": "Reminders",
+  "profile": "Profile",
+  "advocateProfile": "Advocate Profile",
+  "editProfile": "Edit Profile",
+  "appearance": "Appearance",
+  "support": "Support",
+  "sendFeedback": "Send Feedback",
+  "feedbackSubtitle": "Email us your suggestions",
+  "copyright": "© {year} Rujan Khiuju. All rights reserved.",
+  "setupAccount": "Setup Your Account",
+  "setupSubtitle": "Create your profile to get started",
+  "firstName": "First Name",
+  "lastName": "Last Name",
+  "continue": "Continue",
+  "setPin": "Set Your PIN",
+  "pinSubtitle": "Enter a 4-6 digit PIN for quick access",
+  "createAccount": "Create Account",
+  "back": "Back",
+  "welcomeBackTitle": "Welcome Back",
+  "unlock": "Unlock",
+  "unlockBiometrics": "Unlock with Biometrics",
+  "continueAsGuest": "Continue as Guest",
+  "appLocked": "App Locked",
+  "enterPin": "Enter your PIN to continue",
+  "incorrectPin": "Incorrect PIN",
+  "pinRequired": "PIN must be 4-6 digits",
+  "required": "Required",
+  "notificationsDisabled": "Notifications Disabled",
+  "enableNotifications": "Enable to receive reminder alerts",
+  "openSettings": "Open Settings",
+  "allCaughtUp": "All caught up!",
+  "overdue": "Overdue",
+  "upcoming": "Upcoming",
+  "snooze": "Snooze",
+  "complete": "Complete",
+  "delete": "Delete",
+  "addReminder": "Add Reminder",
+  "editReminder": "Edit Reminder",
+  "reminderTitle": "Reminder Title",
+  "reminderNote": "Note",
+  "reminderDate": "Date & Time",
+  "priority": "Priority",
+  "high": "High",
+  "medium": "Medium",
+  "low": "Low",
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirmDelete": "Delete this reminder?",
+  "guestMode": "Guest Mode",
+  "guestRestriction": "Sign in to edit content",
+  "noAccount": "No account found",
+  "biometricsNotAvailable": "Biometrics not available",
+  "biometricsFailed": "Biometric authentication failed"
 }

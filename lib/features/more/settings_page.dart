@@ -7,11 +7,63 @@ import '../../core/theme/theme_provider.dart';
 import '../../shared/widgets/polished_card.dart';
 import '../../shared/widgets/pill_button.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../providers/auth_provider.dart';
+import '../../data/models/user_model.dart';
 import '../home/model/advocate_profile.dart';
 import '../home/providers/advocate_provider.dart';
 
-class SettingsPage extends ConsumerWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  void _showEditNameDialog(UserModel user) {
+    final firstNameCtrl = TextEditingController(text: user.firstName);
+    final lastNameCtrl = TextEditingController(text: user.lastName);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Edit Name'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: firstNameCtrl,
+              decoration: const InputDecoration(labelText: 'First Name'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: lastNameCtrl,
+              decoration: const InputDecoration(labelText: 'Last Name'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(authProvider.notifier).updateProfile(
+                    firstNameCtrl.text.trim(),
+                    lastNameCtrl.text.trim(),
+                  );
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,6 +83,9 @@ class SettingsPage extends ConsumerWidget {
       error: (_, __) => defaultProfile,
     );
 
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -39,6 +94,46 @@ class SettingsPage extends ConsumerWidget {
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
+          _SectionHeader(title: 'Profile', isDark: isDark),
+          const SizedBox(height: 8),
+          PolishedCard(
+            padding: const EdgeInsets.all(4),
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkAccent.withOpacity(0.12)
+                      : AppColors.lightSecondary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                user?.fullName ?? 'Guest',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                user?.isGuest == true ? 'Guest Mode' : 'Tap to edit name',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: user?.isGuest == true
+                  ? null
+                  : () => _showEditNameDialog(context, ref, user!),
+            ),
+          ),
+          const SizedBox(height: 24),
           _SectionHeader(title: 'Advocate Profile', isDark: isDark),
           const SizedBox(height: 8),
           PolishedCard(

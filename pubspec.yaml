@@ -1,7 +1,7 @@
 name: legal_assistant
 description: A legal companion app with document scanning, case notes, calendar, and reminders.
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -31,6 +31,10 @@ dependencies:
   flutter_staggered_animations: ^1.1.0
   package_info_plus: ^8.0.0
   url_launcher: ^6.2.6
+  flutter_secure_storage: ^9.2.2
+  local_auth: ^2.2.0
+  crypto: ^3.0.3
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
@@ -38,7 +42,15 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   build_runner: ^2.4.9
   hive_generator: ^2.0.1
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
   generate: true
+
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#0A192F"
+  adaptive_icon_foreground: "assets/app_icon.png"
+  min_sdk_android: 24

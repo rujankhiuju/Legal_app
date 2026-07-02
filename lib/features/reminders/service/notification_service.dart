@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import '../model/reminder.dart' hide Priority;
@@ -40,6 +42,19 @@ class NotificationService {
 
   void _onNotificationTap(NotificationResponse response) {}
 
+  Future<bool> requestPermission() async {
+    final status = await Permission.notification.request();
+    return status.isGranted;
+  }
+
+  Future<bool> hasPermission() async {
+    return await Permission.notification.isGranted;
+  }
+
+  Future<void> openSettings() async {
+    await openAppSettings();
+  }
+
   Future<void> scheduleReminder(Reminder reminder) async {
     final id = reminder.id.hashCode;
     final title = reminder.title;
@@ -54,8 +69,19 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+      channelShowBadge: true,
+      enableLights: true,
+      ledColor: 0xFFFF3B30,
+      ledOnMs: 1000,
+      ledOffMs: 500,
     );
-    const iosDetails = DarwinNotificationDetails();
+    const iosDetails = DarwinNotificationDetails(
+      presentSound: true,
+      presentBadge: true,
+      presentAlert: true,
+    );
     final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     final scheduledDate = tz.TZDateTime.from(reminder.dueDate, tz.local);

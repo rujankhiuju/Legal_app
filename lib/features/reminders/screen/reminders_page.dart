@@ -7,11 +7,29 @@ import '../../../shared/widgets/polished_card.dart';
 import '../model/reminder.dart';
 import '../providers/reminder_provider.dart';
 
-class RemindersPage extends ConsumerWidget {
+class RemindersPage extends ConsumerStatefulWidget {
   const RemindersPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RemindersPage> createState() => _RemindersPageState();
+}
+
+class _RemindersPageState extends ConsumerState<RemindersPage> {
+  bool _permissionDenied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPermission();
+  }
+
+  Future<void> _checkPermission() async {
+    final has = await NotificationService.instance.hasPermission();
+    if (mounted) setState(() => _permissionDenied = !has);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
 
@@ -21,9 +39,71 @@ class RemindersPage extends ConsumerWidget {
       ),
       body: Container(
         color: bgColor,
-        child: _RemindersBody(
-          reminders: ref.watch(sortedRemindersProvider),
-          isDark: isDark,
+        child: Column(
+          children: [
+            if (_permissionDenied)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkCard
+                      : AppColors.lightCard,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: AppColors.error.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_off_rounded,
+                        color: AppColors.error, size: 22),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Notifications Disabled',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: isDark
+                                  ? AppColors.darkText
+                                  : AppColors.lightText,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Enable to receive reminder alerts',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? AppColors.darkSubtitle
+                                  : AppColors.lightSubtitle,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        await NotificationService.instance.openSettings();
+                        await _checkPermission();
+                      },
+                      child: const Text('Open Settings'),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: _RemindersBody(
+                reminders: ref.watch(sortedRemindersProvider),
+                isDark: isDark,
+              ),
+            ),
+          ],
         ),
       ),
     );

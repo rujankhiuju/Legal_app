@@ -46,7 +46,13 @@ class ReminderActions {
   Future<void> addReminder(Reminder reminder) async {
     final box = await ref.read(remindersBoxProvider.future);
     await box.put(reminder.id, reminder);
-    await NotificationService.instance.scheduleReminder(reminder);
+    if (!reminder.isCompleted) {
+      final hasPermission = await NotificationService.instance.hasPermission();
+      if (!hasPermission) {
+        await NotificationService.instance.requestPermission();
+      }
+      await NotificationService.instance.scheduleReminder(reminder);
+    }
     ref.invalidate(remindersListProvider);
   }
 
