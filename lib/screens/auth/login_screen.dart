@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/biometric_service.dart';
@@ -14,7 +15,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _pinController = TextEditingController();
+  final _pinFocusNode = FocusNode();
   String? _error;
+  bool _loading = false;
   bool _biometricAvailable = false;
 
   @override
@@ -23,30 +27,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _checkBiometrics();
   }
 
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _pinFocusNode.dispose();
+    super.dispose();
+  }
+
   Future<void> _checkBiometrics() async {
     final service = BiometricService();
     final available = await service.isAvailable();
     if (mounted) setState(() => _biometricAvailable = available);
   }
 
-  Future<void> _loginWithPin(String pin) async {
+  Future<void> _unlock() async {
+    final pin = _pinController.text.trim();
+    if (pin.length < 4) {
+      setState(() => _error = 'Enter at least 4 digits');
+      return;
+    }
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
     final err = await ref.read(authProvider.notifier).loginWithPin(pin);
-    if (err != null && mounted) {
-      setState(() => _error = err);
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        if (err != null) {
+          _error = err;
+        }
+      });
     }
   }
 
-  Future<void> _loginWithBio() async {
+  Future<void> _biometricLogin() async {
+    setState(() => _loading = true);
     final err = await ref.read(authProvider.notifier).loginWithBiometrics();
-    if (err != null && mounted) {
-      setState(() => _error = err);
+    if (mounted) {
+      setState(() {
+        _loading = false;
+        if (err != null) _error = err;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final bg = isDark ? AppColors.darkBackground : const Color(0xFF0A192F);
     final user = ref.watch(authProvider).user;
 
     return Scaffold(
@@ -54,7 +83,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -63,69 +92,186 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: isDark ? AppColors.darkCard : AppColors.lightCard,
+                    color: isDark ? AppColors.darkCard : Colors.white.withOpacity(0.1),
                   ),
                   child: Icon(
                     Icons.lock_outline_rounded,
                     size: 40,
-                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                    color: isDark ? AppColors.darkAccent : const Color(0xFFD4AF37),
                   ),
                 ),
                 const SizedBox(height: 24),
                 Text(
                   'Welcome Back',
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    color: isDark ? AppColors.darkText : Colors.white,
                   ),
                 ),
                 if (user != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     user.fullName,
                     style: TextStyle(
                       fontSize: 16,
-                      color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                      color: isDark ? AppColors.darkSubtitle : Colors.white70,
                     ),
                   ),
                 ],
-                const SizedBox(height: 32),
-                PinInputField(
-                  length: 4,
-                  errorText: _error,
-                  onCompleted: _loginWithPin,
+                const SizedBox(height: 36),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard.withOpacity(0.5) : Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkDivider.withOpacity(0.3)
+                          : Colors.white.withOpacity(0.15),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Enter PIN',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.darkSubtitle : Colors.white60,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _pinController,
+                        focusNode: _pinFocusNode,
+                        obscureText: true,
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        maxLength: 6,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 12,
+                          color: isDark ? AppColors.darkText : Colors.white,
+                        ),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          filled: true,
+                          fillColor: isDark ? AppColors.darkSurface : Colors.white.withOpacity(0.06),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: _error != null
+                                  ? AppColors.error
+                                  : (isDark ? AppColors.darkDivider : Colors.white24),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: isDark ? AppColors.darkDivider : Colors.white24,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: const Color(0xFFD4AF37),
+                              width: 1.5,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                          hintText: '• • • •',
+                          hintStyle: TextStyle(
+                            fontSize: 32,
+                            letterSpacing: 12,
+                            color: isDark ? AppColors.darkSubtitle : Colors.white30,
+                          ),
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                        onSubmitted: (_) => _unlock(),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                              const SizedBox(width: 6),
+                              Text(
+                                _error!,
+                                style: const TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-                PillButton(
-                  label: 'Unlock',
-                  onTap: () {},
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: PillButton(
+                    label: _loading ? 'Unlocking...' : 'Unlock',
+                    onTap: _loading ? null : _unlock,
+                    loading: _loading,
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF0A192F),
+                  ),
                 ),
                 if (_biometricAvailable) ...[
                   const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: _loginWithBio,
-                    icon: Icon(
-                      Icons.fingerprint,
-                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
-                    ),
-                    label: Text(
-                      'Unlock with Biometrics',
-                      style: TextStyle(
-                        color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : _biometricLogin,
+                      icon: Icon(
+                        Icons.fingerprint,
+                        color: isDark ? AppColors.darkAccent : const Color(0xFFD4AF37),
+                      ),
+                      label: Text(
+                        'Unlock with Biometrics',
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkAccent : const Color(0xFFD4AF37),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: isDark
+                              ? AppColors.darkDivider
+                              : Colors.white24,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
                     ),
                   ),
                 ],
                 const SizedBox(height: 24),
-                TextButton(
-                  onPressed: () => ref.read(authProvider.notifier).continueAsGuest(),
+                GestureDetector(
+                  onTap: () => ref.read(authProvider.notifier).continueAsGuest(),
                   child: Text(
                     'Continue as Guest',
                     style: TextStyle(
-                      color: isDark
-                          ? AppColors.darkSubtitle
-                          : AppColors.lightSubtitle,
+                      color: isDark ? AppColors.darkSubtitle : Colors.white54,
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),

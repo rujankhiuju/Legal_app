@@ -28,7 +28,7 @@ import 'route_names.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authProvider);
+  ref.watch(authProvider);
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
@@ -36,6 +36,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.matchedLocation;
       final onAuthScreen = path == '/setup' || path == '/login' || path == '/lock';
+      final auth = ProviderScope.containerOf(context).read(authProvider);
 
       if (auth.status == AuthStatus.authenticated) {
         if (onAuthScreen) return '/${RouteNames.home}';
