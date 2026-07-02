@@ -82,7 +82,7 @@ class _PillButtonState extends State<PillButton>
         _controller.reverse();
       } : null,
       child: AnimatedBuilder(
-        animation: _scale,
+        listenable: _scale,
         builder: (context, child) => Transform.scale(
           scale: _scale.value,
           child: child,
