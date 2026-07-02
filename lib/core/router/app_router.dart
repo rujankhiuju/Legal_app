@@ -34,17 +34,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/${RouteNames.home}',
     redirect: (context, state) {
-      final loggedIn = auth.status == AuthStatus.authenticated;
       final path = state.matchedLocation;
       final onAuthScreen = path == '/setup' || path == '/login' || path == '/lock';
 
-      if (!loggedIn) {
+      if (auth.status == AuthStatus.authenticated) {
+        if (onAuthScreen) return '/${RouteNames.home}';
+        return null;
+      }
+
+      if (auth.status == AuthStatus.uninitialized) return null;
+
+      if (auth.status == AuthStatus.setupRequired) {
+        if (path == '/login') return '/setup';
         if (!onAuthScreen) return '/setup';
         return null;
       }
-      if (loggedIn && onAuthScreen) {
-        return '/${RouteNames.home}';
+
+      if (auth.status == AuthStatus.loginRequired) {
+        if (path == '/setup') return '/login';
+        if (!onAuthScreen) return '/login';
+        return null;
       }
+
       return null;
     },
     routes: [

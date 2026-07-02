@@ -57,6 +57,7 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
                     width: 80,
@@ -101,6 +102,7 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                       ),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                       textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.next,
                       style: TextStyle(
                         color: isDark ? AppColors.darkText : AppColors.lightText,
                       ),
