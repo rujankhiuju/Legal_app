@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:ui' show Color;
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:go_router/go_router.dart';
 import '../model/reminder.dart' hide Priority;
 
 @pragma('vm:entry-point')
@@ -15,6 +17,9 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
+  String? _pendingNavigationPayload;
+
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -41,7 +46,57 @@ class NotificationService {
     _initialized = true;
   }
 
-  void _onNotificationTap(NotificationResponse response) {}
+  void _onNotificationTap(NotificationResponse response) {
+    final payload = response.payload;
+    final route = payload != null ? '/reminders' : null;
+    if (route != null) {
+      _pendingNavigationPayload = payload;
+      final nav = navigatorKey.currentContext;
+      if (nav != null) {
+        GoRouter.of(nav).go(route);
+      }
+    }
+  }
+
+  String? consumePendingNavigation() {
+    final p = _pendingNavigationPayload;
+    _pendingNavigationPayload = null;
+    return p;
+  }
+
+  Future<bool> requestPermissionWithExplanation(BuildContext context) async {
+    final status = await Permission.notification.status;
+    if (status.isDenied) {
+      final shouldShowRationale = await Permission.notification.shouldShowRequestRationale;
+      if (shouldShowRationale) {
+        final result = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('Enable Notifications'),
+            content: const Text(
+              'Reminders for court hearings, case deadlines, and legal tasks need notification permission to alert you at the right time.\n\n'
+              'We will only send notifications for your scheduled reminders.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Not Now'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Enable'),
+              ),
+            ],
+          ),
+        );
+        if (result != true) return false;
+      }
+    }
+    final newStatus = await Permission.notification.request();
+    return newStatus.isGranted;
+  }
 
   Future<bool> requestPermission() async {
     final status = await Permission.notification.request();
@@ -57,7 +112,7 @@ class NotificationService {
   }
 
   Future<void> scheduleReminder(Reminder reminder) async {
-    final id = reminder.id.hashCode;
+    final id = _uniqueId(reminder.id);
     final title = reminder.title;
     final body = reminder.note.isNotEmpty
         ? reminder.note
@@ -97,14 +152,19 @@ class NotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       payload: reminder.id,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
   Future<void> cancelReminder(String reminderId) async {
-    await _plugin.cancel(reminderId.hashCode);
+    await _plugin.cancel(_uniqueId(reminderId));
   }
 
   Future<void> cancelAll() async {
     await _plugin.cancelAll();
+  }
+
+  int _uniqueId(String reminderId) {
+    return reminderId.hashCode & 0x7FFFFFFF;
   }
 }

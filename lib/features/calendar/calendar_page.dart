@@ -12,6 +12,16 @@ import 'providers/calendar_provider.dart';
 
 enum CalendarView { month, week, agenda }
 
+Color? tryParseColor(String hex) {
+  try {
+    final h = hex.replaceFirst('#', '');
+    if (h.length != 6 && h.length != 8) return null;
+    return Color(int.parse('FF$h', radix: 16));
+  } catch (_) {
+    return null;
+  }
+}
+
 class CalendarPage extends ConsumerStatefulWidget {
   const CalendarPage({super.key});
 
@@ -35,11 +45,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   void dispose() {
     _agendaController.dispose();
     super.dispose();
-  }
-
-  Color _parseColor(String hex) {
-    final h = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$h', radix: 16));
   }
 
   List<CourtEvent> _eventsForDate(DateTime date, Map<DateTime, List<CourtEvent>> map) {
@@ -79,6 +84,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     view: _view,
                     focusedDate: _focusedDate,
                     selectedDate: _selectedDate,
+                    eventsMap: eventsMap,
                     isDark: isDark,
                     onDaySelected: (sel, foc) {
                       HapticFeedback.lightImpact();
@@ -103,7 +109,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     subtitleColor: subtitleColor,
                     onDelete: (id) {
                       HapticFeedback.lightImpact();
-                      ref.read(calendarActionsProvider).deleteEvent(id);
+                      _confirmDelete(context, id);
                     },
                   ),
                 if (_view == CalendarView.agenda)
@@ -114,7 +120,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                     subtitleColor: subtitleColor,
                     onDelete: (id) {
                       HapticFeedback.lightImpact();
-                      ref.read(calendarActionsProvider).deleteEvent(id);
+                      _confirmDelete(context, id);
                     },
                   ),
               ],
@@ -127,6 +133,30 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           context.pushNamed(RouteNames.addHearing);
         },
         child: const Icon(Icons.add_rounded),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, String eventId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Delete Event'),
+        content: const Text('Are you sure you want to delete this event?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(calendarActionsProvider).deleteEvent(eventId);
+            },
+            child: Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
       ),
     );
   }
@@ -163,6 +193,7 @@ class _CalendarWidget extends StatelessWidget {
   final CalendarView view;
   final DateTime focusedDate;
   final DateTime selectedDate;
+  final Map<DateTime, List<CourtEvent>> eventsMap;
   final bool isDark;
   final void Function(DateTime, DateTime) onDaySelected;
   final void Function(CalendarView) onFormatChanged;
@@ -172,6 +203,7 @@ class _CalendarWidget extends StatelessWidget {
     required this.view,
     required this.focusedDate,
     required this.selectedDate,
+    required this.eventsMap,
     required this.isDark,
     required this.onDaySelected,
     required this.onFormatChanged,
@@ -213,6 +245,7 @@ class _CalendarWidget extends StatelessWidget {
             CalendarFormat.month: '',
             CalendarFormat.week: '',
           },
+          eventLoader: (day) => _eventsForDate(day, eventsMap),
           onFormatChanged: (f) {
             onFormatChanged(
               f == CalendarFormat.month ? CalendarView.month : CalendarView.week,
@@ -287,15 +320,41 @@ class _CalendarWidget extends StatelessWidget {
           ),
           calendarBuilders: CalendarBuilders(
             markerBuilder: (context, date, events) {
-              if (events == null || events.isEmpty) return null;
+              if (events.isEmpty) return null;
+              final colors = events
+                  .map((e) => tryParseColor((e as CourtEvent).colorHex))
+                  .whereType<Color>()
+                  .toSet()
+                  .toList();
+              if (colors.isEmpty) {
+                return Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 28),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                );
+              }
               return Center(
                 child: Container(
                   margin: const EdgeInsets.only(top: 28),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
-                    shape: BoxShape.circle,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: colors.take(3).map((c) {
+                      return Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               );
@@ -304,6 +363,11 @@ class _CalendarWidget extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<CourtEvent> _eventsForDate(DateTime date, Map<DateTime, List<CourtEvent>> map) {
+    final d = DateTime(date.year, date.month, date.day);
+    return map[d] ?? [];
   }
 }
 
@@ -327,11 +391,6 @@ class _DayEventsList extends StatelessWidget {
   String _monthDay(DateTime dt) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[dt.month - 1]} ${dt.day}';
-  }
-
-  Color _parseColor(String hex) {
-    final h = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$h', radix: 16));
   }
 
   String _time(DateTime dt) {
@@ -385,7 +444,7 @@ class _DayEventsList extends StatelessWidget {
           ),
         ),
         ...events.map((event) {
-          final color = _parseColor(event.colorHex);
+          final color = tryParseColor(event.colorHex) ?? AppColors.lightSecondary;
           return StaggeredFadeSlide(
             index: events.indexOf(event),
             child: Padding(
@@ -601,14 +660,9 @@ class _AgendaEventCard extends StatelessWidget {
     required this.onDelete,
   });
 
-  Color _parseColor(String hex) {
-    final h = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$h', radix: 16));
-  }
-
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(event.colorHex);
+    final color = tryParseColor(event.colorHex) ?? AppColors.lightSecondary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: PolishedCard(

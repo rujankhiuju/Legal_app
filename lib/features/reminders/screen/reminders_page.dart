@@ -361,7 +361,27 @@ class _ReminderCard extends ConsumerWidget {
                       color: AppColors.error,
                       onTap: () {
                         HapticFeedback.mediumImpact();
-                        actions.deleteReminder(reminder);
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            title: const Text('Delete Reminder'),
+                            content: const Text('This cannot be undone.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  actions.deleteReminder(reminder);
+                                },
+                                child: Text('Delete', style: TextStyle(color: AppColors.error)),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                   ],

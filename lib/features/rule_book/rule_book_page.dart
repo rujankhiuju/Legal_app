@@ -31,6 +31,37 @@ class _RuleBookPageState extends ConsumerState<RuleBookPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rule Book'),
+        actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final offlineAsync = ref.watch(isOfflineProvider);
+              return offlineAsync.when(
+                data: (offline) => offline
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.cloud_off_rounded, size: 14, color: Colors.orange),
+                              SizedBox(width: 4),
+                              Text('Offline', style: TextStyle(fontSize: 11, color: Colors.orange)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -111,50 +142,123 @@ class _DocumentList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final docsAsync = ref.watch(legalDocsProvider);
     final grouped = ref.watch(filteredDocsProvider);
     final query = ref.watch(searchQueryProvider);
 
-    if (grouped.isEmpty) {
-      return Center(
+    return docsAsync.when(
+      loading: () => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.search_off_rounded,
-              size: 64,
-              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            CircularProgressIndicator(
+              color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
             ),
             const SizedBox(height: 16),
             Text(
-              query.isEmpty
-                  ? 'No documents available'
-                  : 'No results for "$query"',
+              'Loading legal documents...',
               style: TextStyle(
                 color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
               ),
             ),
           ],
         ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 24),
-      children: [
-        if (query.isEmpty) _RecentSection(isDark: isDark),
-        for (final entry in grouped.entries) ...[
-          _CategoryHeader(
-            category: entry.key,
-            count: entry.value.length,
-            isDark: isDark,
+      ),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load documents',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDark ? AppColors.darkText : AppColors.lightText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                ),
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () => ref.read(ruleBookActionsProvider).refresh(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Retry',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
-          for (final doc in entry.value)
-            StaggeredFadeSlide(
-              index: entry.value.indexOf(doc),
-              child: _DocumentCard(doc: doc, isDark: isDark),
+        ),
+      ),
+      data: (_) {
+        if (grouped.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  query.isEmpty
+                      ? 'No documents available'
+                      : 'No results for "$query"',
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+                  ),
+                ),
+              ],
             ),
-        ],
-      ],
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => ref.read(ruleBookActionsProvider).refresh(),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 24),
+            children: [
+              if (query.isEmpty) _RecentSection(isDark: isDark),
+              for (final entry in grouped.entries) ...[
+                _CategoryHeader(
+                  category: entry.key,
+                  count: entry.value.length,
+                  isDark: isDark,
+                ),
+                for (final doc in entry.value)
+                  StaggeredFadeSlide(
+                    index: entry.value.indexOf(doc),
+                    child: _DocumentCard(doc: doc, isDark: isDark),
+                  ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

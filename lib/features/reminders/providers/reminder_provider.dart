@@ -3,7 +3,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../model/reminder.dart';
 import '../service/notification_service.dart';
 import '../../calendar/model/court_event.dart';
-import '../../calendar/providers/calendar_provider.dart';
 
 final remindersBoxProvider = FutureProvider<Box<Reminder>>((ref) async {
   return Hive.openBox<Reminder>('reminders');
@@ -58,7 +57,19 @@ class ReminderActions {
 
   Future<void> addEventReminder(CourtEvent event) async {
     final scheduled = event.dateTime.subtract(const Duration(hours: 1));
-    if (scheduled.isBefore(DateTime.now())) return;
+    if (scheduled.isBefore(DateTime.now())) {
+      final reminder = Reminder(
+        id: 'event_${event.id}',
+        title: 'Hearing: ${event.title}',
+        note: event.caseName,
+        priority: Priority.high,
+        dueDate: event.dateTime,
+        relatedEventId: event.id,
+        createdAt: DateTime.now(),
+      );
+      await addReminder(reminder);
+      return;
+    }
 
     final reminder = Reminder(
       id: 'event_${event.id}',

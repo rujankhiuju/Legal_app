@@ -1,3 +1,4 @@
+import 'dart:ui' show Color;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,14 +8,21 @@ import '../../core/theme/app_colors.dart';
 import '../../core/router/route_names.dart';
 import '../../shared/widgets/staggered_animation.dart';
 import '../../shared/widgets/polished_card.dart';
-import '../../shared/widgets/pill_button.dart';
 import '../../shared/services/update_checker.dart';
 import '../../providers/auth_provider.dart';
-import '../calendar/model/court_event.dart';
 import '../notes/model/case_note.dart';
-import 'model/advocate_profile.dart';
 import 'providers/home_provider.dart';
 import 'providers/advocate_provider.dart';
+
+Color? tryParseColor(String hex) {
+  try {
+    final h = hex.replaceFirst('#', '');
+    if (h.length != 6 && h.length != 8) return null;
+    return Color(int.parse('FF$h', radix: 16));
+  } catch (_) {
+    return null;
+  }
+}
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -503,8 +511,6 @@ class _UpcomingHearings extends ConsumerWidget {
     required this.subtitleColor,
   });
 
-  Color _parseColor(String hex) => Color(int.parse('FF$hex', radix: 16));
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hearings = ref.watch(upcomingHearingsProvider);
@@ -512,22 +518,46 @@ class _UpcomingHearings extends ConsumerWidget {
     if (hearings.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: PolishedCard(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Icon(
-                Icons.event_busy_rounded,
-                color: isDark
-                    ? AppColors.darkSubtitle
-                    : AppColors.lightSubtitle,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'No upcoming hearings',
-                style: TextStyle(color: subtitleColor),
-              ),
-            ],
+        child: GestureDetector(
+          onTap: () => context.pushNamed(RouteNames.addHearing),
+          child: PolishedCard(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.event_busy_rounded,
+                  color: isDark
+                      ? AppColors.darkSubtitle
+                      : AppColors.lightSubtitle,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No upcoming hearings',
+                        style: TextStyle(color: subtitleColor),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to add a hearing',
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                  size: 22,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -542,7 +572,7 @@ class _UpcomingHearings extends ConsumerWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final event = hearings[index];
-          final color = _parseColor(event.colorHex);
+          final color = tryParseColor(event.colorHex) ?? AppColors.lightSecondary;
 
           return StaggeredFadeSlide(
             index: index,
@@ -644,22 +674,46 @@ class _RecentNotesList extends ConsumerWidget {
     if (notes.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: PolishedCard(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Icon(
-                Icons.note_add_outlined,
-                color: isDark
-                    ? AppColors.darkSubtitle
-                    : AppColors.lightSubtitle,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'No notes yet',
-                style: TextStyle(color: subtitleColor),
-              ),
-            ],
+        child: GestureDetector(
+          onTap: () => context.pushNamed(RouteNames.notesEditor),
+          child: PolishedCard(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.note_add_outlined,
+                  color: isDark
+                      ? AppColors.darkSubtitle
+                      : AppColors.lightSubtitle,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No notes yet',
+                        style: TextStyle(color: subtitleColor),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to create a note',
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                  size: 22,
+                ),
+              ],
+            ),
           ),
         ),
       );

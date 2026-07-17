@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/user_model.dart';
 import '../core/services/biometric_service.dart';
 
@@ -11,12 +13,16 @@ class AuthState {
   final UserModel? user;
   final String? error;
   final DateTime? lastActivity;
+  final int failedAttempts;
+  final DateTime? lockoutUntil;
 
   const AuthState({
     this.status = AuthStatus.uninitialized,
     this.user,
     this.error,
     this.lastActivity,
+    this.failedAttempts = 0,
+    this.lockoutUntil,
   });
 
   AuthState copyWith({
@@ -24,6 +30,8 @@ class AuthState {
     UserModel? user,
     String? error,
     DateTime? lastActivity,
+    int? failedAttempts,
+    DateTime? lockoutUntil,
     bool clearError = false,
   }) =>
       AuthState(
@@ -31,7 +39,17 @@ class AuthState {
         user: user ?? this.user,
         error: clearError ? null : (error ?? this.error),
         lastActivity: lastActivity ?? this.lastActivity,
+        failedAttempts: failedAttempts ?? this.failedAttempts,
+        lockoutUntil: lockoutUntil ?? this.lockoutUntil,
       );
+
+  bool get isLockedOut =>
+      lockoutUntil != null && DateTime.now().isBefore(lockoutUntil!);
+
+  int get remainingLockoutSeconds =>
+      lockoutUntil != null
+          ? max(0, lockoutUntil!.difference(DateTime.now()).inSeconds)
+          : 0;
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -52,17 +70,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> setupAccount({
+  Future<String?> setupAccount({
     required String firstName,
     required String lastName,
     required String pin,
     bool biometricEnabled = false,
   }) async {
-    final hash = _hashPin(pin);
+    if (firstName.trim().isEmpty || lastName.trim().isEmpty) {
+      return 'First and last name are required';
+    }
+    if (pin.length < 4) {
+      return 'PIN must be at least 4 digits';
+    }
+    if (pin.length > 10) {
+      return 'PIN must not exceed 10 digits';
+    }
+    if (!RegExp(r'^\d+$').hasMatch(pin)) {
+      return 'PIN must contain only numbers';
+    }
+
+    final salt = _generateSalt();
+    final hash = _hashPin(pin, salt);
     final user = UserModel(
-      firstName: firstName,
-      lastName: lastName,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       pinHash: hash,
+      pinSalt: salt,
       biometricEnabled: biometricEnabled,
     );
     await UserStorage.save(user);
@@ -71,15 +104,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
       user: user,
       lastActivity: DateTime.now(),
     );
+    return null;
   }
 
   Future<String?> loginWithPin(String pin) async {
+    if (state.isLockedOut) {
+      return 'Too many attempts. Try again in ${state.remainingLockoutSeconds}s';
+    }
+
     final user = state.user;
-    if (user == null) return 'No account found';
-    if (user.pinHash != _hashPin(pin)) return 'Incorrect PIN';
+    if (user == null) {
+      return 'Authentication failed';
+    }
+
+    if (user.pinHash != _hashPin(pin, user.pinSalt)) {
+      final attempts = state.failedAttempts + 1;
+      final maxAttempts = 5;
+      if (attempts >= maxAttempts) {
+        state = state.copyWith(
+          failedAttempts: attempts,
+          lockoutUntil: DateTime.now().add(const Duration(minutes: 2)),
+          error: 'Too many attempts. Locked for 2 minutes.',
+        );
+        return null;
+      }
+      state = state.copyWith(
+        failedAttempts: attempts,
+        error: 'Incorrect PIN ($attempts/$maxAttempts)',
+      );
+      return null;
+    }
+
     state = state.copyWith(
       status: AuthStatus.authenticated,
       lastActivity: DateTime.now(),
+      failedAttempts: 0,
+      lockoutUntil: null,
       clearError: true,
     );
     return null;
@@ -89,11 +149,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final service = BiometricService();
     final available = await service.isAvailable();
     if (!available) return 'Biometrics not available';
-    final authenticated = await service.authenticate();
+    final authenticated = await service.authenticate(
+      reason: 'Authenticate to access your legal documents',
+    );
     if (!authenticated) return 'Biometric authentication failed';
     state = state.copyWith(
       status: AuthStatus.authenticated,
       lastActivity: DateTime.now(),
+      failedAttempts: 0,
       clearError: true,
     );
     return null;
@@ -104,8 +167,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       firstName: 'Guest',
       lastName: '',
       pinHash: '',
+      pinSalt: '',
       isGuest: true,
     );
+    await UserStorage.save(guest);
     state = AuthState(
       status: AuthStatus.authenticated,
       user: guest,
@@ -122,6 +187,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await UserStorage.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_failed_attempts');
     state = const AuthState(status: AuthStatus.setupRequired);
   }
 
@@ -137,9 +204,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(user: updated);
   }
 
-  String _hashPin(String pin) {
-    final bytes = utf8.encode(pin);
-    return sha256.convert(bytes).toString();
+  String _generateSalt() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    return base64Encode(bytes);
+  }
+
+  String _hashPin(String pin, String salt) {
+    final key = utf8.encode(salt + pin);
+    return sha256.convert(key).toString();
   }
 }
 

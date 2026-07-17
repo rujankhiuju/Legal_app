@@ -23,11 +23,14 @@ class _AddHearingPageState extends ConsumerState<AddHearingPage> {
   bool _isHearing = true;
 
   static const _colorOptions = [
-    ('2C2C2C', 'Dark'),
-    ('8B7E6B', 'Taupe'),
-    ('C4A882', 'Gold'),
-    ('8E8E93', 'Gray'),
-    ('1C1C1E', 'Black'),
+    ('D4AF37', 'Gold'),
+    ('1E3A8A', 'Navy'),
+    ('DC2626', 'Red'),
+    ('059669', 'Green'),
+    ('7C3AED', 'Purple'),
+    ('0891B2', 'Cyan'),
+    ('D97706', 'Amber'),
+    ('BE185D', 'Pink'),
   ];
 
   @override

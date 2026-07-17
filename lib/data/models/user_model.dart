@@ -5,6 +5,7 @@ class UserModel {
   final String firstName;
   final String lastName;
   final String pinHash;
+  final String pinSalt;
   final bool biometricEnabled;
   final bool isGuest;
 
@@ -12,6 +13,7 @@ class UserModel {
     required this.firstName,
     required this.lastName,
     required this.pinHash,
+    this.pinSalt = '',
     this.biometricEnabled = false,
     this.isGuest = false,
   });
@@ -22,6 +24,7 @@ class UserModel {
         'firstName': firstName,
         'lastName': lastName,
         'pinHash': pinHash,
+        'pinSalt': pinSalt,
         'biometricEnabled': biometricEnabled,
         'isGuest': isGuest,
       };
@@ -30,6 +33,7 @@ class UserModel {
         firstName: json['firstName'] as String,
         lastName: json['lastName'] as String,
         pinHash: json['pinHash'] as String,
+        pinSalt: json['pinSalt'] as String? ?? '',
         biometricEnabled: json['biometricEnabled'] as bool? ?? false,
         isGuest: json['isGuest'] as bool? ?? false,
       );
@@ -38,6 +42,7 @@ class UserModel {
     String? firstName,
     String? lastName,
     String? pinHash,
+    String? pinSalt,
     bool? biometricEnabled,
     bool? isGuest,
   }) =>
@@ -45,6 +50,7 @@ class UserModel {
         firstName: firstName ?? this.firstName,
         lastName: lastName ?? this.lastName,
         pinHash: pinHash ?? this.pinHash,
+        pinSalt: pinSalt ?? this.pinSalt,
         biometricEnabled: biometricEnabled ?? this.biometricEnabled,
         isGuest: isGuest ?? this.isGuest,
       );
