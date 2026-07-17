@@ -154,6 +154,11 @@ const _items = [
     label: 'Calendar',
   ),
   _NavItem(
+    icon: Icons.picture_as_pdf_outlined,
+    activeIcon: Icons.picture_as_pdf_rounded,
+    label: 'PDF Tools',
+  ),
+  _NavItem(
     icon: Icons.more_horiz_outlined,
     activeIcon: Icons.more_horiz,
     label: 'More',

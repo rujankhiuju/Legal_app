@@ -577,7 +577,7 @@ class _UpcomingHearings extends ConsumerWidget {
           return StaggeredFadeSlide(
             index: index,
             child: GestureDetector(
-              onTap: () => context.pushNamed(RouteNames.calendar),
+              onTap: () => context.pushNamed(RouteNames.hearingDetail, extra: event.id),
               child: PolishedCard(
                 padding: const EdgeInsets.all(16),
                 margin: EdgeInsets.zero,

@@ -8,6 +8,7 @@ class UserModel {
   final String pinSalt;
   final bool biometricEnabled;
   final bool isGuest;
+  final bool requiresAuth;
 
   const UserModel({
     required this.firstName,
@@ -16,6 +17,7 @@ class UserModel {
     this.pinSalt = '',
     this.biometricEnabled = false,
     this.isGuest = false,
+    this.requiresAuth = false,
   });
 
   String get fullName => '$firstName $lastName';
@@ -27,6 +29,7 @@ class UserModel {
         'pinSalt': pinSalt,
         'biometricEnabled': biometricEnabled,
         'isGuest': isGuest,
+        'requiresAuth': requiresAuth,
       };
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -36,6 +39,7 @@ class UserModel {
         pinSalt: json['pinSalt'] as String? ?? '',
         biometricEnabled: json['biometricEnabled'] as bool? ?? false,
         isGuest: json['isGuest'] as bool? ?? false,
+        requiresAuth: json['requiresAuth'] as bool? ?? false,
       );
 
   UserModel copyWith({
@@ -45,6 +49,7 @@ class UserModel {
     String? pinSalt,
     bool? biometricEnabled,
     bool? isGuest,
+    bool? requiresAuth,
   }) =>
       UserModel(
         firstName: firstName ?? this.firstName,
@@ -53,6 +58,7 @@ class UserModel {
         pinSalt: pinSalt ?? this.pinSalt,
         biometricEnabled: biometricEnabled ?? this.biometricEnabled,
         isGuest: isGuest ?? this.isGuest,
+        requiresAuth: requiresAuth ?? this.requiresAuth,
       );
 }
 

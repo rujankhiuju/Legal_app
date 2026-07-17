@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../shared/services/nepal_law_api.dart';
+import '../../../providers/law_provider.dart';
 import '../model/legal_document.dart';
-import '../data/seed_data.dart';
 
 final legalDocsBoxProvider = FutureProvider<Box<LegalDocument>>((ref) async {
   return Hive.openBox<LegalDocument>('legal_docs');
@@ -48,6 +48,13 @@ final legalDocsProvider = FutureProvider<List<LegalDocument>>((ref) async {
     return box.values.toList();
   }
 
+  final lawDocs = await ref.watch(lawProvider.future);
+  if (lawDocs.isNotEmpty) {
+    final map = {for (final doc in lawDocs) doc.id: doc};
+    await box.putAll(map);
+    return lawDocs;
+  }
+
   final response = await NepalLawApi.fetchAll();
   if (response.error == null && response.documents.isNotEmpty) {
     final map = {for (final doc in response.documents) doc.id: doc};
@@ -57,10 +64,7 @@ final legalDocsProvider = FutureProvider<List<LegalDocument>>((ref) async {
     return response.documents;
   }
 
-  final seedDocs = seedLegalDocuments();
-  final map = {for (final doc in seedDocs) doc.id: doc};
-  await box.putAll(map);
-  return seedDocs;
+  return [];
 });
 
 void _backgroundRefresh(

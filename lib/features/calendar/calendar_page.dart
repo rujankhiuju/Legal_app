@@ -454,62 +454,71 @@ class _DayEventsList extends StatelessWidget {
                 margin: EdgeInsets.zero,
                 child: Row(
                   children: [
-                    Container(
-                      width: 4,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(4),
+                    GestureDetector(
+                      onTap: () => context.pushNamed(
+                        RouteNames.hearingDetail,
+                        extra: event.id,
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            event.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: textColor,
+                          Container(
+                            width: 4,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            event.caseName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 13, color: subtitleColor),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
+                          const SizedBox(width: 14),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.schedule_rounded,
-                                size: 13,
-                                color: isDark
-                                    ? AppColors.darkAccent
-                                    : AppColors.lightSecondary,
-                              ),
-                              const SizedBox(width: 4),
                               Text(
-                                _time(event.dateTime),
+                                event.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? AppColors.darkAccent
-                                      : AppColors.lightSecondary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: textColor,
                                 ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                event.caseName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 13, color: subtitleColor),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: isDark
+                                        ? AppColors.darkAccent
+                                        : AppColors.lightSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _time(event.dateTime),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? AppColors.darkAccent
+                                          : AppColors.lightSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
+                    const Spacer(),
                     GestureDetector(
                       onTap: () => onDelete(event.id),
                       child: Container(

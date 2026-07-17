@@ -22,6 +22,7 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
   final _pinFocus = FocusNode();
   bool _loading = false;
   bool _pinStep = false;
+  bool _requiresAuth = false;
 
   @override
   void dispose() {
@@ -36,23 +37,23 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
 
   Future<void> _createAccount() async {
     if (!_formKey.currentState!.validate()) return;
-    final pin = _pinCtrl.text.trim();
-    if (pin.length < 4) {
+    setState(() => _loading = true);
+    final err = await ref.read(authProvider.notifier).setupAccount(
+      firstName: _firstNameCtrl.text.trim(),
+      lastName: _lastNameCtrl.text.trim(),
+      pin: _pinCtrl.text.trim(),
+      requiresAuth: _requiresAuth,
+    );
+    if (mounted && err != null) {
+      setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('PIN must be 4-6 digits'),
+          content: Text(err),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       );
-      return;
     }
-    setState(() => _loading = true);
-    await ref.read(authProvider.notifier).setupAccount(
-          firstName: _firstNameCtrl.text.trim(),
-          lastName: _lastNameCtrl.text.trim(),
-          pin: pin,
-        );
   }
 
   @override
@@ -95,7 +96,9 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _pinStep ? 'Set a 4-6 digit PIN for quick access' : 'Create your profile to get started',
+                    _pinStep
+                        ? 'Set a 4-6 digit PIN for quick access'
+                        : 'Create your profile to get started',
                     style: TextStyle(
                       fontSize: 15,
                       color: isDark ? AppColors.darkSubtitle : Colors.white60,
@@ -233,12 +236,57 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                                 textInputAction: TextInputAction.done,
                                 onFieldSubmitted: (_) {
                                   if (_formKey.currentState!.validate()) {
-                                    setState(() => _pinStep = true);
-                                    _pinFocus.requestFocus();
+                                    if (_requiresAuth) {
+                                      setState(() => _pinStep = true);
+                                      _pinFocus.requestFocus();
+                                    } else {
+                                      _createAccount();
+                                    }
                                   }
                                 },
                                 style: TextStyle(
                                   color: isDark ? AppColors.darkText : Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: isDark
+                                      ? AppColors.darkSurface
+                                      : Colors.white.withOpacity(0.06),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      child: Transform.scale(
+                                        scale: 0.85,
+                                        child: CupertinoSwitch(
+                                          value: _requiresAuth,
+                                          activeColor: const Color(0xFFD4AF37),
+                                          onChanged: (v) => setState(() => _requiresAuth = v),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Icon(
+                                      _requiresAuth ? Icons.lock_rounded : Icons.lock_open_rounded,
+                                      size: 18,
+                                      color: isDark ? AppColors.darkAccent : Colors.white54,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Enable Security (PIN/Biometric)',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDark ? AppColors.darkText : Colors.white70,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -253,8 +301,12 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                           : (_pinStep ? 'Create Account' : 'Continue'),
                       onTap: _loading ? null : (_pinStep ? _createAccount : () {
                         if (_formKey.currentState!.validate()) {
-                          setState(() => _pinStep = true);
-                          _pinFocus.requestFocus();
+                          if (_requiresAuth) {
+                            setState(() => _pinStep = true);
+                            _pinFocus.requestFocus();
+                          } else {
+                            _createAccount();
+                          }
                         }
                       }),
                       loading: _loading,

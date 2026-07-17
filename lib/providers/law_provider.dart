@@ -1,9 +1,60 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../features/rule_book/model/legal_document.dart';
+import '../shared/services/nepal_law_api.dart';
+
+final lawDocsBoxProvider = FutureProvider<Box<LegalDocument>>((ref) async {
+  return Hive.openBox<LegalDocument>('legal_docs');
+});
+
+final lawDocsMetaBoxProvider = FutureProvider<Box>((ref) async {
+  return Hive.openBox('law_docs_meta');
+});
+
+final _lawRefreshLockProvider = StateProvider<bool>((ref) => false);
 
 final lawProvider = FutureProvider<List<LegalDocument>>((ref) async {
-  return _seedDocuments();
+  ref.watch(_lawRefreshLockProvider);
+  final box = await ref.watch(lawDocsBoxProvider.future);
+  final metaBox = await ref.watch(lawDocsMetaBoxProvider.future);
+
+  if (box.isNotEmpty) {
+    final isRefreshing = ref.read(_lawRefreshLockProvider);
+    if (!isRefreshing) {
+      ref.read(_lawRefreshLockProvider.notifier).state = true;
+      _backgroundFetchDocs(ref, box, metaBox);
+    }
+    return box.values.toList();
+  }
+
+  final seedDocs = _seedDocuments();
+  final map = {for (final doc in seedDocs) doc.id: doc};
+  await box.putAll(map);
+  await metaBox.put('seeded', true);
+
+  ref.read(_lawRefreshLockProvider.notifier).state = true;
+  _backgroundFetchDocs(ref, box, metaBox);
+  return seedDocs;
 });
+
+void _backgroundFetchDocs(Ref ref, Box<LegalDocument> box, Box metaBox) async {
+  try {
+    final response = await NepalLawApi.fetchAll();
+    if (response.error == null && response.documents.isNotEmpty) {
+      final map = {for (final doc in response.documents) doc.id: doc};
+      await box.putAll(map);
+      await metaBox.put('lastFetched', DateTime.now().toIso8601String());
+      await metaBox.put('isOffline', false);
+    } else {
+      await metaBox.put('isOffline', true);
+    }
+  } catch (_) {
+    await metaBox.put('isOffline', true);
+  } finally {
+    ref.read(_lawRefreshLockProvider.notifier).state = false;
+    ref.invalidate(lawProvider);
+  }
+}
 
 final lawCategoriesProvider = Provider<Map<String, List<LegalDocument>>>((ref) {
   final docs = ref.watch(lawProvider).valueOrNull ?? [];
@@ -27,8 +78,14 @@ final lawSearchProvider = Provider.family<List<LegalDocument>, String>((ref, que
   ).toList();
 });
 
+final lawDocByIdProvider = FutureProvider.family<LegalDocument?, String>((ref, id) async {
+  final box = await ref.watch(lawDocsBoxProvider.future);
+  return box.get(id);
+});
+
 List<LegalDocument> _seedDocuments() {
   return [
+
     // ===== CONSTITUTION (6) =====
     LegalDocument(
       id: 'const_001',
@@ -580,6 +637,943 @@ List<LegalDocument> _seedDocuments() {
       contentEn: 'The Educational and Academic Discipline Act of Nepal defines the rights and responsibilities of students in educational institutions. Students have the right to quality education, a safe learning environment, access to library and laboratory facilities, and participation in extracurricular activities. Students may form student unions and associations as per the provisions of the act. The act prohibits ragging, bullying, and any form of harassment in educational institutions. Institutions must have a code of conduct for students and a disciplinary committee to address violations. Academic discipline includes regular attendance, completion of assignments, and adherence to examination rules. Cheating in examinations is a serious offense that may result in cancellation of results, suspension, or expulsion. The act also addresses the issue of student fees, prohibiting sudden increases and ensuring transparency. The scholarship and financial assistance system provides support to meritorious and needy students. The Student Welfare Fund is established in each institution for student welfare activities.',
       contentNp: 'नेपालको शैक्षिक तथा शैक्षणिक अनुशासन ऐनले शैक्षिक संस्थामा विद्यार्थीको अधिकार र उत्तरदायित्व परिभाषित गर्दछ। विद्यार्थीहरूलाई गुणस्तरीय शिक्षा, सुरक्षित सिकाइ वातावरण, पुस्तकालय र प्रयोगशाला सुविधामा पहुँच, र अतिरिक्त क्रियाकलापमा सहभागिताको अधिकार छ। विद्यार्थीहरूले ऐनको व्यवस्थाअनुसार विद्यार्थी सङ्घ र संघहरू गठन गर्न सक्छन्। ऐनले शैक्षिक संस्थामा र्यागिङ, बुलिङ र कुनै पनि प्रकारको उत्पीडनलाई निषेध गर्दछ। संस्थाहरूमा विद्यार्थीको लागि आचारसंहिता र उल्लङ्घन सम्बोधन गर्न अनुशासन समिति हुनुपर्दछ। शैक्षिक अनुशासनमा नियमित उपस्थिति, कार्यभार पूरा गर्ने र परीक्षा नियम पालना समावेश छ। परीक्षामा नक्कल गर्नु गम्भीर अपराध हो जसको परिणाम परिणाम रद्द, निलम्बन वा निष्कासन हुन सक्छ। ऐनले विद्यार्थी शुल्कको मुद्दालाई पनि सम्बोधन गर्दछ, अचानक वृद्धि निषेध गर्दछ र पारदर्शिता सुनिश्चित गर्दछ। छात्रवृत्ति र आर्थिक सहायता प्रणालीले प्रतिभाशाली र आवश्यकतामा परेका विद्यार्थीहरूलाई सहयोग प्रदान गर्दछ। प्रत्येक संस्थामा विद्यार्थी कल्याण गतिविधिको लागि विद्यार्थी कल्याण कोष स्थापना गरिन्छ।',
       keywords: ['student rights', 'academic discipline', 'ragging', 'scholarship', 'vidyarthi adhikar', 'shikshan anushasan', 'student union', 'examination rules'],
+    ),
+  
+LegalDocument(
+      id: 'pub_off_001',
+      titleEn: 'Public Nuisance and Disorderly Conduct',
+      titleNp: 'सार्वजनिक उपद्रव र अव्यवस्थित व्यवहार',
+      category: 'Public Offenses Act',
+      contentEn: 'Public nuisance includes any act that causes inconvenience, annoyance, or harm to the general public. Disorderly conduct includes fighting, using abusive language, creating excessive noise, and behaving in a manner that disturbs public peace. The Public Offenses Act empowers local authorities and police to take action against persons creating public nuisance. Penalties include fines, imprisonment, or both, depending on the severity of the offense.',
+      contentNp: 'सार्वजनिक उपद्रवमा सर्वसाधारणलाई असुविधा, हैरानी वा हानि पुर्याउने कुनै पनि कार्य समावेश हुन्छ। अव्यवस्थित व्यवहारमा झगडा गर्ने, अपशब्द प्रयोग गर्ने, अत्यधिक आवाज गर्ने र सार्वजनिक शान्ति भङ्ग गर्ने व्यवहार समावेश हुन्छ। सार्वजनिक अपराध ऐनले स्थानीय अधिकारी र प्रहरीलाई सार्वजनिक उपद्रव गर्ने व्यक्तिविरुद्ध कारबाही गर्न अधिकार दिन्छ।',
+      keywords: ['public nuisance', 'disorderly conduct', 'public peace', 'sarbajanik updrav', 'noise', 'abusive language'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_002',
+      titleEn: 'Defamation and Slander',
+      titleNp: 'मानहानि र बदनामी',
+      category: 'Public Offenses Act',
+      contentEn: 'Defamation is the act of making false statements that harm the reputation of another person. In Nepalese law, defamation can be both a civil wrong and a criminal offense. Defamatory statements may be made orally (slander) or in writing (libel). The injured party may file a complaint in the criminal court and also claim civil damages. Truth is a valid defense in defamation cases if the statement was made in good faith and for the public benefit.',
+      contentNp: 'मानहानि भनेको अर्को व्यक्तिको प्रतिष्ठालाई हानि पुर्याउने झूटा कथन गर्ने कार्य हो। नेपाली कानूनमा, मानहानि नागरिक गल्ती र फौजदारी अपराध दुवै हुन सक्छ। मानहानिकारक कथन मौखिक वा लिखित रूपमा गर्न सकिन्छ। पीडित पक्षले फौजदारी अदालतमा उजुरी दिन र नागरिक क्षतिपूर्ति पनि दाबी गर्न सक्छ।',
+      keywords: ['defamation', 'slander', 'libel', 'reputation', 'manahani', 'badnami', 'good faith defense'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_003',
+      titleEn: 'Sedition and Treason',
+      titleNp: 'राजद्रोह र राज्यविरुद्धको अपराध',
+      category: 'Public Offenses Act',
+      contentEn: 'Sedition is the act of promoting disaffection, hatred, or contempt against the government through spoken or written words. Treason involves acts of war against Nepal, attempting to overthrow the government by force, or providing aid to enemies of the state. These are serious offenses that threaten national security and are punishable by life imprisonment or the death penalty. Investigation of these offenses is conducted by specialized agencies.',
+      contentNp: 'राजद्रोह भनेको मौखिक वा लिखित शब्दमार्फत सरकारविरुद्ध असंतोष, घृणा वा अवहेलना प्रवर्धन गर्ने कार्य हो। देशद्रोहमा नेपालविरुद्ध युद्ध गर्ने, बल प्रयोग गरी सरकार उखाल्ने प्रयास गर्ने वा राज्यको शत्रुलाई सहायता प्रदान गर्ने कार्य समावेश हुन्छ। यी गम्भीर अपराध हुन् जसले राष्ट्रिय सुरक्षालाई खतरामा पार्दछन्।',
+      keywords: ['sedition', 'treason', 'rajdroh', 'national security', 'government overthrow', 'enemy aid'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_004',
+      titleEn: 'Counterfeit Currency and Forgery',
+      titleNp: 'नक्कली मुद्रा र जालसाजी',
+      category: 'Public Offenses Act',
+      contentEn: 'The production, possession, or circulation of counterfeit currency is a serious criminal offense under Nepalese law. Forgery involves the creation or alteration of documents, signatures, or seals with the intent to defraud. Both offenses carry severe penalties including lengthy imprisonment and substantial fines. The Nepal Police and the Nepal Rastra Bank work together to investigate counterfeit currency cases. Digital forgery using technology is also covered under the Electronic Transactions Act.',
+      contentNp: 'नक्कली मुद्राको उत्पादन, कब्जा वा प्रचलन नेपाली कानून अन्तर्गत गम्भीर फौजदारी अपराध हो। जालसाजीमा ठगी गर्ने आशयले कागजात, हस्ताक्षर वा छापको निर्माण वा परिवर्तन समावेश हुन्छ। दुवै अपराधमा लामो कैद र ठूलो जरिवाना सहित कडा सजाय हुन्छ।',
+      keywords: ['counterfeit', 'forgery', 'jalasaji', 'nakkali mudra', 'fraud', 'signature forgery'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_005',
+      titleEn: 'Unlawful Assembly and Rioting',
+      titleNp: 'गैरकानूनी सभा र दङ्गा',
+      category: 'Public Offenses Act',
+      contentEn: 'An unlawful assembly consists of five or more persons gathered with the common intention of committing an offense or intimidating authorities. Rioting occurs when an unlawful assembly uses force or violence in furtherance of their common objective. Participants in an unlawful assembly may be punished with imprisonment. Rioting carries more severe penalties, especially when it results in property damage or personal injury. Police have the authority to disperse unlawful assemblies using reasonable force.',
+      contentNp: 'गैरकानूनी सभामा अपराध गर्ने वा अधिकारीहरूलाई धम्की दिने साझा आशयले जम्मा भएका पाँच वा बढी व्यक्तिहरू हुन्छन्। दङ्गा तब हुन्छ जब गैरकानूनी सभाले आफ्नो साझा उद्देश्य पूरा गर्न बल वा हिंसा प्रयोग गर्दछ। गैरकानूनी सभामा सहभागीहरूलाई कैदको सजाय हुन सक्छ।',
+      keywords: ['unlawful assembly', 'rioting', 'gang', 'danga', 'public violence', 'police dispersal'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_006',
+      titleEn: 'Gambling and Betting Offenses',
+      titleNp: 'जुवा र सट्टा सम्बन्धी अपराध',
+      category: 'Public Offenses Act',
+      contentEn: 'Gambling and betting are regulated under the Public Offenses Act and the Gambling Act. Operating a gambling house, participating in gambling, or being found in a gambling establishment are punishable offenses. Authorized lotteries and certain forms of betting regulated by law are exempted. Police may raid suspected gambling establishments, seize gambling equipment, and arrest participants. Repeat offenders face enhanced penalties.',
+      contentNp: 'जुवा र सट्टा सार्वजनिक अपराध ऐन र जुवा ऐन अन्तर्गत नियमन गरिन्छ। जुवा घर सञ्चालन गर्ने, जुवामा भाग लिने, वा जुवा प्रतिष्ठानमा फेला पर्नु दण्डनीय अपराध हो। अधिकृत लटरी र कानूनद्वारा नियमन गरिएका निश्चित प्रकारको सट्टा छुट दिइएको छ।',
+      keywords: ['gambling', 'betting', 'juwa', 'satta', 'gambling house', 'lottery', 'police raid'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_007',
+      titleEn: 'Obscenity and Immoral Traffic',
+      titleNp: 'अश्लीलता र अनैतिक कारोबार',
+      category: 'Public Offenses Act',
+      contentEn: 'The publication, display, or distribution of obscene materials is prohibited under Nepalese law. Immoral traffic includes prostitution, brothel keeping, and soliciting. The Human Trafficking and Transportation Act addresses the commercial sexual exploitation of women and children. Offenses related to obscenity in digital media are also covered under the Electronic Transactions Act. Authorities conduct regular operations to curb obscenity and immoral trafficking networks.',
+      contentNp: 'अश्लील सामग्रीको प्रकाशन, प्रदर्शन वा वितरण नेपाली कानून अन्तर्गत निषेधित छ। अनैतिक कारोबारमा वेश्यावृत्ति, वेश्यालय सञ्चालन र ग्राहक खोज्ने कार्य समावेश हुन्छ। मानव बेचबिखन तथा ओसारपसार ऐनले महिला र बालबालिकाको व्यावसायिक यौन शोषणलाई सम्बोधन गर्दछ।',
+      keywords: ['obscenity', 'immoral traffic', 'prostitution', 'ashlilta', 'anaetik karobar', 'brothel'],
+    ),
+
+    LegalDocument(
+      id: 'pub_off_008',
+      titleEn: 'Weapons and Explosives Offenses',
+      titleNp: 'हतियार र विस्फोटक पदार्थ सम्बन्धी अपराध',
+      category: 'Public Offenses Act',
+      contentEn: 'The Arms and Ammunition Act regulates the possession, sale, and use of firearms and weapons in Nepal. Unauthorized possession of firearms, explosives, or lethal weapons is a criminal offense. Licenses are required for the lawful possession of firearms, issued by the District Administration Office. The use of illegal weapons in the commission of other offenses attracts enhanced penalties. Import and export of weapons without authorization is strictly prohibited.',
+      contentNp: 'हतियार तथा खरानी ऐनले नेपालमा बन्दुक र हतियारको कब्जा, बिक्री र प्रयोगलाई नियमन गर्दछ। बन्दुक, विस्फोटक पदार्थ वा घातक हतियारको अनधिकृत कब्जा फौजदारी अपराध हो। बन्दुकको कानूनी कब्जाको लागि जिल्ला प्रशासन कार्यालयद्वारा जारी इजाजतपत्र आवश्यक हुन्छ।',
+      keywords: ['weapons', 'explosives', 'firearms', 'hatiyar', 'license', 'arms act', 'ammunition'],
+    ),
+
+    LegalDocument(
+      id: 'elec_001',
+      titleEn: 'Election Commission Powers and Functions',
+      titleNp: 'निर्वाचन आयोगको अधिकार र कार्यहरू',
+      category: 'Election Act',
+      contentEn: 'The Election Commission of Nepal is a constitutional body responsible for conducting, supervising, and controlling elections for federal, provincial, and local levels. The Commission has the power to delimit constituencies, prepare voter lists, register political parties, and enforce election codes of conduct. It ensures that elections are held in a free, fair, and credible manner. The Commission also adjudicates election-related disputes and can postpone elections in emergency situations.',
+      contentNp: 'नेपालको निर्वाचन आयोग संघीय, प्रदेश र स्थानीय तहको निर्वाचन सञ्चालन, पर्यवेक्षण र नियन्त्रणको लागि जिम्मेवार संवैधानिक निकाय हो। आयोगलाई निर्वाचन क्षेत्र निर्धारण, मतदाता सूची तयार, राजनीतिक दल दर्ता र निर्वाचन आचारसंहिता लागू गर्ने अधिकार छ।',
+      keywords: ['election commission', 'voter list', 'constituency', 'nirwachan ayog', 'election code', 'political parties'],
+    ),
+
+    LegalDocument(
+      id: 'elec_002',
+      titleEn: 'Voter Registration and Eligibility',
+      titleNp: 'मतदाता दर्ता र योग्यता',
+      category: 'Election Act',
+      contentEn: 'Every Nepali citizen who has attained the age of eighteen years is eligible to be registered as a voter. Voter registration is conducted by the Election Commission through designated registration centers across the country. Voters must register in their place of residence. The voter list is updated annually and published for public scrutiny. Citizens may file claims and objections regarding the voter list within a specified timeframe.',
+      contentNp: 'अठार वर्ष उमेर पुगेको प्रत्येक नेपाली नागरिक मतदाताको रूपमा दर्ता हुन योग्य हुन्छ। मतदाता दर्ता निर्वाचन आयोगले देशभरका निर्दिष्ट दर्ता केन्द्रमार्फत सञ्चालन गर्दछ। मतदाताहरू आफ्नो बसोबासको स्थानमा दर्ता हुनुपर्दछ। मतदाता सूची वार्षिक रूपमा अद्यावधिक गरिन्छ र सार्वजनिक निरीक्षणको लागि प्रकाशित गरिन्छ।',
+      keywords: ['voter registration', 'voter eligibility', 'voter list', 'matadata darta', 'age requirement', 'residence'],
+    ),
+
+    LegalDocument(
+      id: 'elec_003',
+      titleEn: 'Candidate Eligibility and Nomination',
+      titleNp: 'उम्मेदवारको योग्यता र मनोनयन',
+      category: 'Election Act',
+      contentEn: 'Candidates for election must meet eligibility criteria including being a registered voter, meeting minimum age requirements, and not being disqualified by law. Nomination papers must be filed with the Election Officer within the specified timeframe. Candidates must deposit an election fee, which is forfeited if they fail to secure a minimum percentage of votes. A candidate may withdraw their candidacy within the prescribed period. Disqualifications include bankruptcy, criminal conviction, and holding an office of profit.',
+      contentNp: 'निर्वाचनको लागि उम्मेदवारहरूले दर्ता भएको मतदाता हुनुपर्ने, न्यूनतम उमेर आवश्यकता पूरा गर्नुपर्ने र कानूनद्वारा अयोग्य नभएको हुनुपर्ने जस्ता योग्यता मापदण्ड पूरा गर्नुपर्दछ। मनोनयन पत्र निर्वाचन अधिकृतलाई निर्दिष्ट समयसीमाभित्र दायर गर्नुपर्दछ।',
+      keywords: ['candidate', 'nomination', 'election fee', 'ummheduar', 'manonayan', 'disqualification', 'withdrawal'],
+    ),
+
+    LegalDocument(
+      id: 'elec_004',
+      titleEn: 'Election Campaign and Code of Conduct',
+      titleNp: 'निर्वाचन प्रचार र आचारसंहिता',
+      category: 'Election Act',
+      contentEn: 'Election campaigns are regulated by the Election Commission through a Code of Conduct. The code limits campaign expenditure, prohibits the use of public resources for campaigning, bans hate speech and character assassination, and ensures equal media access for all candidates. Campaigning must cease forty-eight hours before polling day. Violations of the code may result in warnings, fines, or disqualification of the candidate.',
+      contentNp: 'निर्वाचन प्रचार निर्वाचन आयोगले आचारसंहितामार्फत नियमन गर्दछ। आचारसंहिताले प्रचार खर्च सीमित गर्दछ, प्रचारको लागि सार्वजनिक स्रोतको प्रयोग निषेध गर्दछ, घृणात्मक भाषण र चरित्र हत्यालाई प्रतिबन्ध गर्दछ, र सबै उम्मेदवारको लागि समान मिडिया पहुँच सुनिश्चित गर्दछ। मतदानको अघिल्लो दिन अड़तालीस घण्टा अगाडि प्रचार बन्द गर्नुपर्दछ।',
+      keywords: ['election campaign', 'code of conduct', 'campaign expenditure', 'nirwachan prachar', 'aacharsanhita', 'hate speech', 'media access'],
+    ),
+
+    LegalDocument(
+      id: 'elec_005',
+      titleEn: 'Polling Procedures and Voting',
+      titleNp: 'मतदान प्रक्रिया र मतदान',
+      category: 'Election Act',
+      contentEn: 'Voting is conducted through secret ballot at designated polling stations. Voters must present valid identification to vote. The Election Commission deploys election officials, security personnel, and observers to ensure orderly voting. Special arrangements are made for senior citizens, persons with disabilities, and pregnant women. Electronic voting machines may be used in certain elections. Voting hours are from 7 AM to 5 PM. Results are counted at the counting center.',
+      contentNp: 'मतदान निर्दिष्ट मतदान केन्द्रमा गोप्य मतपत्रमार्फत सञ्चालन गरिन्छ। मतदाताले मतदान गर्न वैध परिचयपत्र पेश गर्नुपर्दछ। निर्वाचन आयोगले व्यवस्थित मतदान सुनिश्चित गर्न निर्वाचन अधिकारी, सुरक्षाकर्मी र पर्यवेक्षक परिचालन गर्दछ। ज्येष्ठ नागरिक, अपाङ्गता भएका व्यक्तिहरू र गर्भवती महिलाहरूको लागि विशेष व्यवस्था गरिन्छ।',
+      keywords: ['polling', 'voting', 'secret ballot', 'matadan', 'polling station', 'voter ID', 'counting', 'election observer'],
+    ),
+
+    LegalDocument(
+      id: 'elec_006',
+      titleEn: 'Election Offenses and Penalties',
+      titleNp: 'निर्वाचन अपराध र सजाय',
+      category: 'Election Act',
+      contentEn: 'Election offenses include voter impersonation, multiple voting, bribery, undue influence, and tampering with ballot boxes or voting machines. Intentionally disclosing the secrecy of the ballot is also an offense. Rigging elections through fraud or violence is a serious crime. Penalties range from fines to imprisonment for up to several years. Persons convicted of election offenses are disqualified from voting or standing for election for a specified period.',
+      contentNp: 'निर्वाचन अपराधहरूमा मतदाता प्रतिरूपण, बहु मतदान, घूस, अनुचित प्रभाव र मतपेटिका वा मतदान मेसिनमा छेडछाड समावेश हुन्छ। जानीबुझी मतको गोपनीयता खुलासा गर्नु पनि अपराध हो। ठगी वा हिंसामार्फत निर्वाचनमा गडबडी गर्नु गम्भीर अपराध हो।',
+      keywords: ['election offenses', 'voter fraud', 'bribery', 'ballot tampering', 'nirwachan apradh', 'election rigging', 'disqualification'],
+    ),
+
+    LegalDocument(
+      id: 'elec_007',
+      titleEn: 'Electoral Constituency Delimitation',
+      titleNp: 'निर्वाचन क्षेत्र निर्धारण',
+      category: 'Election Act',
+      contentEn: 'The Election Commission is responsible for delimiting electoral constituencies for federal and provincial elections. Constituencies are delimited on the basis of population, geographical features, and administrative convenience. The delimitation process ensures that each constituency has approximately the same population size. Public input and consultation are sought during the delimitation process. The final delimitation order is published in the Nepal Gazette.',
+      contentNp: 'निर्वाचन आयोग संघीय र प्रदेश निर्वाचनको लागि निर्वाचन क्षेत्र निर्धारण गर्न जिम्मेवार छ। निर्वाचन क्षेत्र जनसङ्ख्या, भौगोलिक विशेषता र प्रशासनिक सुविधाको आधारमा निर्धारण गरिन्छ। क्षेत्र निर्धारण प्रक्रियाले प्रत्येक निर्वाचन क्षेत्रमा लगभग समान जनसङ्ख्या सुनिश्चित गर्दछ।',
+      keywords: ['constituency', 'delimitation', 'nirwachan khestra', 'population basis', 'election district', 'gazette'],
+    ),
+
+    LegalDocument(
+      id: 'elec_008',
+      titleEn: 'Local Election Procedures',
+      titleNp: 'स्थानीय निर्वाचन प्रक्रिया',
+      category: 'Election Act',
+      contentEn: 'Local elections in Nepal are held every five years to elect mayors, deputy mayors, ward chairs, and ward members for municipalities and rural municipalities. The election process follows the same general framework as federal and provincial elections but is adapted for local conditions. The Local Government Operation Act and the Election Act together govern local elections. Voters elect candidates directly. Results are declared by the Election Officer at the local level.',
+      contentNp: 'नेपालमा स्थानीय निर्वाचन प्रत्येक पाँच वर्षमा नगरपालिका र गाउँपालिकाको लागि मेयर, उपमेयर, वडाध्यक्ष र वडा सदस्यहरू निर्वाचित गर्न आयोजित हुन्छ। निर्वाचन प्रक्रियाले संघीय र प्रदेश निर्वाचनको जस्तै सामान्य ढाँचा पछ्याउँछ तर स्थानीय परिस्थितिअनुसार अनुकूलित हुन्छ।',
+      keywords: ['local election', 'mayor', 'ward chair', 'sthaniya nirwachan', 'local government', 'election officer', 'direct election'],
+    ),
+
+    LegalDocument(
+      id: 'police_001',
+      titleEn: 'Nepal Police Organization and Structure',
+      titleNp: 'नेपाल प्रहरीको सङ्गठन र संरचना',
+      category: 'Police Act',
+      contentEn: 'Nepal Police is the primary law enforcement agency responsible for maintaining public order, preventing crime, and enforcing laws. The organization is headed by the Inspector General of Police (IGP) and operates under the Ministry of Home Affairs. The police structure includes the Nepal Police Headquarters, provincial police offices, district police offices, and area police offices. Specialized units include the Metropolitan Police, Traffic Police, Cyber Bureau, and the Armed Police Force.',
+      contentNp: 'नेपाल प्रहरी सार्वजनिक व्यवस्था कायम, अपराध रोकथाम र कानून कार्यान्वयनको लागि जिम्मेवार प्रमुख कानून प्रवर्तन निकाय हो। यस सङ्गठनको नेतृत्व प्रहरी महानिरीक्षकले गर्दछ र गृह मन्त्रालय अन्तर्गत सञ्चालित हुन्छ। प्रहरी संरचनामा नेपाल प्रहरी प्रधान कार्यालय, प्रदेश प्रहरी कार्यालय, जिल्ला प्रहरी कार्यालय र क्षेत्रीय प्रहरी कार्यालयहरू समावेश छन्।',
+      keywords: ['nepal police', 'IGP', 'police structure', 'law enforcement', 'prahi', 'home ministry', 'armed police'],
+    ),
+
+    LegalDocument(
+      id: 'police_002',
+      titleEn: 'Police Powers of Arrest and Detention',
+      titleNp: 'प्रहरीको पक्राउ र हिरासतको अधिकार',
+      category: 'Police Act',
+      contentEn: 'Police officers have the power to arrest persons without a warrant in case of flagrant offenses or upon reasonable suspicion of involvement in a cognizable offense. The arrested person must be informed of the grounds of arrest and produced before a judicial authority within twenty-four hours. Police may also conduct searches of persons, premises, and vehicles with a warrant or under certain circumstances without a warrant. Detention beyond twenty-four hours requires judicial authorization.',
+      contentNp: 'प्रहरी अधिकारीहरूलाई रङ्गेहात अपराधको अवस्थामा वा संज्ञानयोग्य अपराधमा संलग्नताको उचित शङ्कामा वारण्टविना व्यक्तिलाई पक्राउ गर्ने अधिकार हुन्छ। पक्राउ गरिएको व्यक्तिलाई पक्राउको आधारबारे जानकारी दिनुपर्दछ र चौबीस घण्टाभित्र न्यायिक अधिकारीसमक्ष पेश गर्नुपर्दछ।',
+      keywords: ['arrest', 'detention', 'warrant', 'pakrau', 'search', '24 hours', 'judicial authority'],
+    ),
+
+    LegalDocument(
+      id: 'police_003',
+      titleEn: 'Traffic Police and Road Safety',
+      titleNp: 'ट्राफिक प्रहरी र सडक सुरक्षा',
+      category: 'Police Act',
+      contentEn: 'The Traffic Police is a specialized unit of Nepal Police responsible for traffic management and road safety. Traffic police officers enforce traffic rules, issue citations for violations, investigate accidents, and manage traffic flow. They have the authority to stop vehicles, check documents, conduct breathalyzer tests for drunk driving, and impound vehicles. Traffic violations include speeding, reckless driving, driving without a license, and running red lights. Penalties include fines, license suspension, and imprisonment.',
+      contentNp: 'ट्राफिक प्रहरी नेपाल प्रहरीको एक विशेष एकाइ हो जो ट्राफिक व्यवस्थापन र सडक सुरक्षाको लागि जिम्मेवार छ। ट्राफिक प्रहरी अधिकारीहरूले ट्राफिक नियम लागू गर्दछन्, उल्लङ्घनको लागि जरिवाना जारी गर्दछन्, दुर्घटनाको अनुसन्धान गर्दछन् र ट्राफिक प्रवाह व्यवस्थापन गर्दछन्।',
+      keywords: ['traffic police', 'road safety', 'traffic rules', 'traphik prahi', 'drunk driving', 'fine', 'license suspension'],
+    ),
+
+    LegalDocument(
+      id: 'police_004',
+      titleEn: 'Police Accountability and Complaints',
+      titleNp: 'प्रहरी जवाफदेहिता र उजुरी',
+      category: 'Police Act',
+      contentEn: 'Citizens may file complaints against police officers for misconduct, abuse of authority, or failure to perform duties. Complaints can be filed with the concerned police office, the Police Headquarters, or the National Human Rights Commission. The Police Act provides for departmental action against erring officers including suspension, reduction in rank, or dismissal from service. The Office of the Police Inspector General handles serious complaints. Judicial remedies are also available through the courts.',
+      contentNp: 'नागरिकहरूले प्रहरी अधिकारीविरुद्ध दुराचार, अधिकारको दुरुपयोग वा कर्तव्य पालन गर्न असफल भएकोमा उजुरी दिन सक्छन्। उजुरी सम्बन्धित प्रहरी कार्यालय, प्रहरी प्रधान कार्यालय वा राष्ट्रिय मानव अधिकार आयोगमा दिन सकिन्छ। प्रहरी ऐनले गल्ती गर्ने अधिकारीविरुद्ध विभागीय कारबाहीको व्यवस्था गर्दछ।',
+      keywords: ['police accountability', 'complaint', 'police misconduct', 'prahi jiwaphdehita', 'ujuri', 'departmental action', 'NHRC'],
+    ),
+
+    LegalDocument(
+      id: 'police_005',
+      titleEn: 'Community Policing Programs',
+      titleNp: 'सामुदायिक प्रहरी कार्यक्रम',
+      category: 'Police Act',
+      contentEn: 'Community policing is a strategy that emphasizes building partnerships between police and communities to address crime and safety issues. Nepal Police implements community policing programs at the local level through beat policing, community meetings, and school safety programs. Community members are encouraged to report suspicious activities and cooperate with police investigations. The approach aims to build trust, reduce fear of crime, and enhance the quality of life.',
+      contentNp: 'सामुदायिक प्रहरी एक रणनीति हो जसले अपराध र सुरक्षा मुद्दाहरू समाधान गर्न प्रहरी र समुदायबीच साझेदारी निर्माणमा जोड दिन्छ। नेपाल प्रहरीले स्थानीय स्तरमा बीट प्रहरी, सामुदायिक बैठक र विद्यालय सुरक्षा कार्यक्रममार्फत सामुदायिक प्रहरी कार्यक्रम कार्यान्वयन गर्दछ।',
+      keywords: ['community policing', 'beat policing', 'neighborhood safety', 'samudayik prahi', 'police-community partnership', 'school safety'],
+    ),
+
+    LegalDocument(
+      id: 'police_006',
+      titleEn: 'Criminal Investigation Procedures',
+      titleNp: 'आपराधिक अनुसन्धान प्रक्रिया',
+      category: 'Police Act',
+      contentEn: 'Police investigation of criminal offenses involves collecting evidence, interviewing witnesses, examining crime scenes, and identifying suspects. The investigation must be conducted in accordance with the Criminal Procedure Code. Police have the power to summon witnesses, seize evidence, and conduct forensic examinations. Investigation reports are submitted to the public prosecutor for review. The quality of police investigation is crucial for successful prosecution in court.',
+      contentNp: 'फौजदारी अपराधको प्रहरी अनुसन्धानमा प्रमाण सङ्कलन, साक्षीहरूको अन्तर्वार्ता, घटनास्थल परीक्षण र संदिग्धहरूको पहिचान समावेश हुन्छ। अनुसन्धान फौजदारी कार्यविधि संहिताअनुसार सञ्चालन गरिनुपर्दछ। प्रहरीलाई साक्षीहरू बोलाउने, प्रमाण जफत गर्ने र फोरेन्सिक परीक्षण गर्ने अधिकार हुन्छ।',
+      keywords: ['criminal investigation', 'evidence', 'crime scene', 'anusandhan', 'forensics', 'witness', 'prosecution'],
+    ),
+
+    LegalDocument(
+      id: 'police_007',
+      titleEn: 'Armed Police Force Duties',
+      titleNp: 'सशस्त्र प्रहरी बलको कर्तव्य',
+      category: 'Police Act',
+      contentEn: 'The Armed Police Force (APF) is a specialized paramilitary force in Nepal responsible for maintaining internal security, counter-insurgency operations, border security, and VIP security. The APF also assists in disaster response and relief operations. The force is headed by an Inspector General and operates under the Ministry of Home Affairs. APF personnel receive specialized training in combat, crowd control, and crisis management.',
+      contentNp: 'सशस्त्र प्रहरी बल नेपालको एक विशेष अर्धसैनिक बल हो जो आन्तरिक सुरक्षा, विद्रोहविरोधी अभियान, सीमा सुरक्षा र विशिष्ट व्यक्ति सुरक्षाको लागि जिम्मेवार छ। सशस्त्र प्रहरी बल विपद् प्रतिकार्य र उद्धार कार्यमा पनि सहायता गर्दछ। यस बलको नेतृत्व प्रहरी महानिरीक्षकले गर्दछ र गृह मन्त्रालय अन्तर्गत सञ्चालित हुन्छ।',
+      keywords: ['armed police', 'APF', 'internal security', 'sashastra prahi', 'counter-insurgency', 'border security', 'disaster response'],
+    ),
+
+    LegalDocument(
+      id: 'police_008',
+      titleEn: 'Cyber Crime Investigation by Police',
+      titleNp: 'प्रहरीद्वारा साइबर अपराध अनुसन्धान',
+      category: 'Police Act',
+      contentEn: 'The Nepal Police Cyber Bureau is the specialized unit for investigating cyber crimes including hacking, online fraud, identity theft, and social media offenses. The bureau uses advanced digital forensics tools to trace cyber criminals. It operates a 24-hour cyber crime hotline for public reporting. The bureau coordinates with international law enforcement agencies through INTERPOL for cross-border cyber crime cases. Public awareness programs on cyber safety are also conducted.',
+      contentNp: 'नेपाल प्रहरी साइबर ब्युरो ह्याकिङ, अनलाइन ठगी, पहिचान चोरी र सामाजिक सञ्जल अपराध लगायत साइबर अपराधको अनुसन्धानको लागि विशेष एकाइ हो। ब्युरोले साइबर अपराधीहरू पत्ता लगाउन उन्नत डिजिटल फोरेन्सिक उपकरणहरू प्रयोग गर्दछ। सार्वजनिक रिपोर्टिङको लागि यसले चौबीस घण्टा साइबर अपराध हटलाइन सञ्चालन गर्दछ।',
+      keywords: ['cyber bureau', 'cyber crime', 'digital forensics', 'saibar byuro', 'online fraud', 'hacking', 'INTERPOL', 'cyber safety'],
+    ),
+
+    LegalDocument(
+      id: 'trans_001',
+      titleEn: 'Vehicle Registration and Licensing',
+      titleNp: 'सवारी दर्ता र इजाजतपत्र',
+      category: 'Transport Management Act',
+      contentEn: 'All motor vehicles in Nepal must be registered with the Department of Transport Management before being operated on public roads. The registration process involves vehicle inspection, payment of customs duties, and issuance of number plates. Registered vehicles receive a registration certificate and require periodic renewal. Transport licenses for commercial vehicles are issued based on route permits and fitness certificates. Driving licenses are issued after passing written and practical tests.',
+      contentNp: 'नेपालका सबै मोटर सवारी साधनहरू सार्वजनिक सडकमा सञ्चालन गर्नुअघि यातायात व्यवस्थापन विभागमा दर्ता गरिनुपर्दछ। दर्ता प्रक्रियामा सवारी निरीक्षण, भन्सार शुल्क भुक्तानी र नम्बर प्लेट जारी समावेश हुन्छ। दर्ता भएका सवारी साधनहरूले दर्ता प्रमाणपत्र प्राप्त गर्दछन् र आवधिक नवीकरण आवश्यक हुन्छ।',
+      keywords: ['vehicle registration', 'driving license', 'transport department', 'savari darta', 'number plate', 'route permit', 'fitness certificate'],
+    ),
+
+    LegalDocument(
+      id: 'trans_002',
+      titleEn: 'Traffic Rules and Regulations',
+      titleNp: 'ट्राफिक नियम र विनियम',
+      category: 'Transport Management Act',
+      contentEn: 'The Traffic Rules and Regulations govern the conduct of drivers, pedestrians, and other road users. Key rules include obeying traffic signals, speed limits, lane discipline, wearing seatbelts, and using helmets for motorcyclists. The use of mobile phones while driving is prohibited. Overloading vehicles beyond prescribed limits is an offense. Driving under the influence of alcohol or drugs is strictly prohibited and punishable with fines, license suspension, and imprisonment.',
+      contentNp: 'ट्राफिक नियम र विनियमहरूले चालक, पैदलयात्री र अन्य सडक प्रयोगकर्ताहरूको आचरण नियन्त्रण गर्दछ। मुख्य नियमहरूमा ट्राफिक संकेत पालना, गति सीमा, लेन अनुशासन, सीटबेल्ट प्रयोग र मोटरसाइकलको लागि हेलमेट प्रयोग समावेश छन्। सवारी चलाउँदा मोबाइल फोन प्रयोग निषेधित छ।',
+      keywords: ['traffic rules', 'speed limit', 'seatbelt', 'helmet', 'traphik niyam', 'drunk driving', 'overloading', 'traffic signal'],
+    ),
+
+    LegalDocument(
+      id: 'trans_003',
+      titleEn: 'Public Transport Regulation',
+      titleNp: 'सार्वजनिक यातायात नियमन',
+      category: 'Transport Management Act',
+      contentEn: 'Public transport services including buses, minibuses, taxis, and tempos are regulated by the Department of Transport Management. Operators must obtain route permits, fix fares according to government rates, and maintain vehicles in roadworthy condition. Public transport vehicles must display fare charts and route information. Passengers have the right to safe and comfortable travel. Overcharging, refusing passengers, and reckless driving by public transport drivers are punishable offenses.',
+      contentNp: 'बस, मिनीबस, ट्याक्सी र टेम्पो लगायत सार्वजनिक यातायात सेवाहरू यातायात व्यवस्थापन विभागद्वारा नियमन गरिन्छ। सञ्चालकहरूले रुट अनुमति प्राप्त गर्नुपर्दछ, सरकारी दरअनुसार भाडा निर्धारण गर्नुपर्दछ र सवारी साधन सडक योग्य अवस्थामा राख्नुपर्दछ। सार्वजनिक यातायात सवारी साधनहरूले भाडा तालिका र रुट जानकारी प्रदर्शन गर्नुपर्दछ।',
+      keywords: ['public transport', 'route permit', 'bus fare', 'sarbajanik yatayat', 'overcharging', 'passenger rights', 'roadworthy'],
+    ),
+
+    LegalDocument(
+      id: 'trans_004',
+      titleEn: 'Road Accident Investigation',
+      titleNp: 'सडक दुर्घटना अनुसन्धान',
+      category: 'Transport Management Act',
+      contentEn: 'Road accidents are investigated by the Traffic Police to determine cause and responsibility. The investigation involves examining the accident scene, collecting physical evidence, interviewing witnesses, and reviewing vehicle conditions and driver records. Hit-and-run accidents carry enhanced penalties. Compensation for accident victims is available through motor insurance and the Victim Compensation Fund. Accident data is used for road safety planning.',
+      contentNp: 'सडक दुर्घटनाको अनुसन्धान ट्राफिक प्रहरीले कारण र जिम्मेवारी निर्धारण गर्न गर्दछ। अनुसन्धानमा दुर्घटना स्थल परीक्षण, भौतिक प्रमाण सङ्कलन, साक्षीहरूको अन्तर्वार्ता र सवारी साधनको अवस्था तथा चालक अभिलेखको समीक्षा समावेश हुन्छ। हिट-एन्ड-रन दुर्घटनामा कडा सजाय हुन्छ।',
+      keywords: ['road accident', 'traffic accident', 'hit and run', 'sadak durghatna', 'accident investigation', 'compensation', 'road safety'],
+    ),
+
+    LegalDocument(
+      id: 'trans_005',
+      titleEn: 'Vehicle Fitness and Pollution Control',
+      titleNp: 'सवारी फिटनेस र प्रदूषण नियन्त्रण',
+      category: 'Transport Management Act',
+      contentEn: 'All motor vehicles must undergo periodic fitness tests to ensure they meet safety and environmental standards. The fitness test covers brakes, lights, tires, emissions, and overall vehicle condition. Vehicles that fail the test are prohibited from operating until repairs are made. Pollution control standards limit vehicle emissions. Vehicles exceeding emission limits are fined and required to install pollution control devices. The government promotes electric vehicles through tax incentives.',
+      contentNp: 'सबै मोटर सवारी साधनहरूले सुरक्षा र वातावरणीय मापदण्ड पूरा गरेको सुनिश्चित गर्न आवधिक फिटनेस परीक्षण गराउनुपर्दछ। फिटनेस परीक्षणले ब्रेक, बत्ती, टायर, उत्सर्जन र समग्र सवारी अवस्था जाँच गर्दछ। परीक्षणमा असफल भएका सवारी साधनहरू मर्मत नभएसम्म सञ्चालन गर्न प्रतिबन्धित हुन्छन्।',
+      keywords: ['vehicle fitness', 'pollution control', 'emission test', 'savari fitness', 'pradushan niyantran', 'electric vehicle', 'green tax'],
+    ),
+
+    LegalDocument(
+      id: 'trans_006',
+      titleEn: 'Transport Service Provider Licensing',
+      titleNp: 'यातायात सेवा प्रदायक इजाजतपत्र',
+      category: 'Transport Management Act',
+      contentEn: 'Companies and individuals providing transport services must obtain licenses from the Department of Transport Management. Licensing requirements include proof of financial capacity, vehicle ownership, parking facilities, and compliance with labor laws. Transport service providers must maintain service standards, including punctuality, passenger safety, and complaint handling. Licenses may be suspended or revoked for violations. The act also regulates ride-sharing services and app-based transport.',
+      contentNp: 'यातायात सेवा प्रदान गर्ने कम्पनी र व्यक्तिहरूले यातायात व्यवस्थापन विभागबाट इजाजतपत्र प्राप्त गर्नुपर्दछ। इजाजतपत्र आवश्यकताहरूमा वित्तीय क्षमता, सवारी स्वामित्व, पार्किङ सुविधा र श्रम कानूनको अनुपालनको प्रमाण समावेश हुन्छ। यातायात सेवा प्रदायकहरूले समयपालनता, यात्रु सुरक्षा र उजुरी व्यवस्थापन सहित सेवा मापदण्ड कायम गर्नुपर्दछ।',
+      keywords: ['transport license', 'service provider', 'yatayat ijajatpatra', 'ride-sharing', 'app-based transport', 'service standard', 'complaint handling'],
+    ),
+
+    LegalDocument(
+      id: 'trans_007',
+      titleEn: 'International Transport and Transit',
+      titleNp: 'अन्तर्राष्ट्रिय यातायात र पारवहन',
+      category: 'Transport Management Act',
+      contentEn: 'Nepal has bilateral agreements with neighboring countries for international transport and transit. The act regulates cross-border movement of goods and passenger vehicles. Customs clearance, transit permits, and compliance with international transport conventions are required. Vehicles entering Nepal must meet Nepalese safety and emission standards. Nepal is a member of regional transport agreements facilitating trade and movement within South Asia.',
+      contentNp: 'नेपालसँग अन्तर्राष्ट्रिय यातायात र पारवहनको लागि छिमेकी देशहरूसँग द्विपक्षीय सम्झौताहरू छन्। ऐनले सीमापार वस्तु र यात्रु सवारी साधनको आवागमन नियमन गर्दछ। भन्सार क्लियरेन्स, पारवहन अनुमति र अन्तर्राष्ट्रिय यातायात सम्मेलनको अनुपालन आवश्यक हुन्छ।',
+      keywords: ['international transport', 'transit', 'cross-border', 'antarrashtriya yatayat', 'bilateral agreement', 'customs', 'transit permit', 'SAARC'],
+    ),
+
+    LegalDocument(
+      id: 'trans_008',
+      titleEn: 'Transport Infrastructure and Planning',
+      titleNp: 'यातायात पूर्वाधार र योजना',
+      category: 'Transport Management Act',
+      contentEn: 'The development of transport infrastructure including roads, bridges, airports, and railways is governed by the Transport Management Act and related legislation. The Department of Roads and the Civil Aviation Authority are responsible for infrastructure planning and development. Transport master plans are prepared at national and provincial levels. The act also addresses land acquisition for transport infrastructure, environmental impact assessments, and public-private partnerships in transport projects.',
+      contentNp: 'सडक, पुल, विमानस्थल र रेलमार्ग सहित यातायात पूर्वाधारको विकास यातायात व्यवस्थापन ऐन र सम्बन्धित कानूनद्वारा नियमन गरिन्छ। सडक विभाग र नागरिक उड्डयन प्राधिकरण पूर्वाधार योजना र विकासको लागि जिम्मेवार छन्। यातायात मास्टर योजनाहरू राष्ट्रिय र प्रदेश स्तरमा तयार गरिन्छ।',
+      keywords: ['transport infrastructure', 'roads', 'bridges', 'yatayat purbadhar', 'master plan', 'public-private partnership', 'EIA', 'airport'],
+    ),
+LegalDocument(
+      id: 'ins_001',
+      titleEn: 'Insurance Contract and Policy Formation',
+      titleNp: 'बीमा सम्झौता र नीति गठन',
+      category: 'Insurance Act',
+      contentEn: 'An insurance contract is a legally binding agreement between the insurer and the insured, where the insurer agrees to compensate the insured for specific losses in exchange for premium payments. The contract must be based on utmost good faith, requiring full disclosure of material facts by both parties. The insurance policy documents the terms, conditions, coverage limits, exclusions, and premium amount. Policy formation follows regulatory guidelines issued by the Nepal Insurance Authority.',
+      contentNp: 'बीमा सम्झौता बीमक र बीमितबीचको कानूनी रूपमा बाध्यकारी करार हो, जहाँ बीमकले प्रिमियम भुक्तानीको बदलामा निर्दिष्ट हानिको लागि बीमितलाई क्षतिपूर्ति दिन सहमत हुन्छ। सम्झौता पूर्ण सद्भावनामा आधारित हुनुपर्दछ, जसमा दुवै पक्षले भौतिक तथ्यहरूको पूर्ण खुलासा आवश्यक हुन्छ।',
+      keywords: ['insurance', 'policy', 'premium', 'bima', 'insurer', 'insured', 'utmost good faith', 'disclosure'],
+    ),
+
+    LegalDocument(
+      id: 'ins_002',
+      titleEn: 'Life Insurance Regulations',
+      titleNp: 'जीवन बीमा नियमन',
+      category: 'Insurance Act',
+      contentEn: 'Life insurance provides financial protection to the beneficiaries of the insured upon the death of the insured or after a specified term. Types of life insurance include term insurance, whole life insurance, endowment plans, and annuity plans. The Nepal Insurance Authority regulates life insurance products, premium rates, and claim settlement procedures. Life insurance companies must maintain solvency margins and reinsurance arrangements to protect policyholders interests.',
+      contentNp: 'जीवन बीमाले बीमितको मृत्यु पश्चात वा निर्दिष्ट अवधि पछि बीमितको लाभार्थीलाई आर्थिक सुरक्षा प्रदान गर्दछ। जीवन बीमाका प्रकारहरूमा अवधि बीमा, सम्पूर्ण जीवन बीमा, अन्तःपूँजी योजना र वार्षिकी योजना समावेश छन्। नेपाल बीमा प्राधिकरणले जीवन बीमा उत्पादन, प्रिमियम दर र दाबी निरुपण प्रक्रिया नियमन गर्दछ।',
+      keywords: ['life insurance', 'term insurance', 'endowment', 'jiwan bima', 'beneficiary', 'solvency', 'reinsurance', 'claim'],
+    ),
+
+    LegalDocument(
+      id: 'ins_003',
+      titleEn: 'Non-Life Insurance Regulations',
+      titleNp: 'नन-लाइफ बीमा नियमन',
+      category: 'Insurance Act',
+      contentEn: 'Non-life insurance includes insurance against fire, marine, motor vehicle, aviation, engineering, health, and miscellaneous accidents. Motor insurance is compulsory for all vehicles operating on public roads. Fire insurance covers losses from fire, lightning, and explosions. Marine insurance covers loss or damage to ships and cargo during transit. The Nepal Insurance Authority sets minimum coverage requirements and standard policy terms for non-life insurance products.',
+      contentNp: 'नन-लाइफ बीमामा आगो, समुद्री, मोटर सवारी, उड्डयन, ईन्जिनियरिङ, स्वास्थ्य र विविध दुर्घटनाविरुद्धको बीमा समावेश हुन्छ। सार्वजनिक सडकमा सञ्चालित सबै सवारी साधनको लागि मोटर बीमा अनिवार्य छ। आगो बीमाले आगो, चट्याङ र विस्फोटबाट हुने हानि समेट्दछ।',
+      keywords: ['non-life insurance', 'motor insurance', 'fire insurance', 'marine insurance', 'gair-jiwan bima', 'motor bima', 'compulsory insurance'],
+    ),
+
+    LegalDocument(
+      id: 'ins_004',
+      titleEn: 'Insurance Claim and Settlement Process',
+      titleNp: 'बीमा दाबी र निरुपण प्रक्रिया',
+      category: 'Insurance Act',
+      contentEn: 'The claim process begins when the insured notifies the insurer of a loss. The insured must submit a claim form with supporting documents including proof of loss, police reports, and estimates of damage. The insurer investigates the claim and may appoint a surveyor or loss adjuster. Claims must be settled within a reasonable timeframe as specified by regulations. If the claim is denied, the insurer must provide written reasons. Disputes may be referred to the Insurance Committee or the courts.',
+      contentNp: 'दाबी प्रक्रिया बीमितले बीमकलाई हानिको सूचना दिएपछि सुरु हुन्छ। बीमितले हानिको प्रमाण, प्रहरी रिपोर्ट र क्षति अनुमान सहित सहायक कागजातसहित दाबी फारम पेश गर्नुपर्दछ। बीमकले दाबीको अनुसन्धान गर्दछ र सर्वेक्षक वा हानि समायोजक नियुक्त गर्न सक्छ।',
+      keywords: ['claim', 'settlement', 'surveyor', 'dabi', 'nirupan', 'loss adjuster', 'claim denial', 'insurance committee'],
+    ),
+
+    LegalDocument(
+      id: 'ins_005',
+      titleEn: 'Insurance Intermediaries and Brokers',
+      titleNp: 'बीमा मध्यस्थ र दलाल',
+      category: 'Insurance Act',
+      contentEn: 'Insurance agents, brokers, and surveyors operate as intermediaries between insurers and the public. They must be licensed by the Nepal Insurance Authority. Agents represent insurance companies and sell policies on their behalf. Brokers work independently and advise clients on the best insurance coverage. Surveyors assess losses and recommend claim amounts. All intermediaries must follow a code of conduct, maintain professional standards, and are subject to regulatory oversight.',
+      contentNp: 'बीमा एजेन्ट, दलाल र सर्वेक्षकहरू बीमक र सर्वसाधारणबीच मध्यस्थको रूपमा काम गर्दछन्। उनीहरू नेपाल बीमा प्राधिकरणबाट इजाजतपत्र प्राप्त गर्नुपर्दछ। एजेन्टहरूले बीमा कम्पनीहरूको प्रतिनिधित्व गर्दछन् र उनीहरूको तर्फबाट नीति बेच्दछन्। दलालहरू स्वतन्त्र रूपमा काम गर्दछन् र ग्राहकहरूलाई उत्तम बीमा कभरेजको सल्लाह दिन्छन्।',
+      keywords: ['insurance agent', 'broker', 'surveyor', 'bima ajanat', 'dalal', 'license', 'code of conduct', 'regulatory oversight'],
+    ),
+
+    LegalDocument(
+      id: 'ins_006',
+      titleEn: 'Microinsurance Regulations',
+      titleNp: 'लघु बीमा नियमन',
+      category: 'Insurance Act',
+      contentEn: 'Microinsurance provides affordable insurance coverage to low-income individuals and communities. The Nepal Insurance Authority has issued special regulations for microinsurance to promote financial inclusion. Microinsurance products have simplified documentation, lower premiums, and streamlined claim processes. Products include crop insurance, livestock insurance, health microinsurance, and accidental death coverage. Microinsurance can be distributed through cooperatives, microfinance institutions, and community-based organizations.',
+      contentNp: 'लघु बीमाले कम आय भएका व्यक्ति र समुदायलाई किफायती बीमा कभरेज प्रदान गर्दछ। नेपाल बीमा प्राधिकरणले वित्तीय समावेशीकरण प्रवर्धन गर्न लघु बीमाको लागि विशेष नियमन जारी गरेको छ। लघु बीमा उत्पादनहरूमा सरलीकृत कागजात, कम प्रिमियम र सरलीकृत दाबी प्रक्रिया हुन्छ।',
+      keywords: ['microinsurance', 'laghu bima', 'financial inclusion', 'crop insurance', 'livestock insurance', 'cooperative', 'microfinance'],
+    ),
+
+    LegalDocument(
+      id: 'ins_007',
+      titleEn: 'Reinsurance and Risk Management',
+      titleNp: 'पुनर्बीमा र जोखिम व्यवस्थापन',
+      category: 'Insurance Act',
+      contentEn: 'Reinsurance is a mechanism where insurance companies transfer portions of their risk portfolios to reinsurers to reduce their exposure to large losses. The Nepal Insurance Authority requires insurers to maintain reinsurance arrangements with approved domestic and international reinsurers. Risk management practices include underwriting standards, investment diversification, and catastrophe risk modeling. Proper risk management ensures the financial stability of the insurance sector and protects policyholders.',
+      contentNp: 'पुनर्बीमा एक संयन्त्र हो जहाँ बीमा कम्पनीहरूले ठूलो हानिको जोखिम कम गर्न आफ्नो जोखिम पोर्टफोलियोको अंश पुनर्बीमकलाई हस्तान्तरण गर्दछन्। नेपाल बीमा प्राधिकरणले बीमकहरूलाई स्वीकृत घरेलु र अन्तर्राष्ट्रिय पुनर्बीमकहरूसँग पुनर्बीमा व्यवस्था कायम राख्न आवश्यक गर्दछ।',
+      keywords: ['reinsurance', 'risk management', 'punarbima', 'jokhim byavasthapan', 'underwriting', 'catastrophe risk', 'solvency'],
+    ),
+
+    LegalDocument(
+      id: 'ins_008',
+      titleEn: 'Insurance Regulatory Authority',
+      titleNp: 'बीमा नियामक प्राधिकरण',
+      category: 'Insurance Act',
+      contentEn: 'The Nepal Insurance Authority is the regulatory body overseeing the insurance sector in Nepal. It is responsible for licensing insurers, intermediaries, and surveyors; approving insurance products and premium rates; monitoring solvency and financial health; protecting policyholder interests; and promoting market development. The Authority has the power to inspect insurers, impose penalties, and in extreme cases, take over management of troubled companies. The Insurance Act grants the Authority its powers and functions.',
+      contentNp: 'नेपाल बीमा प्राधिकरण नेपालमा बीमा क्षेत्रको नियमन गर्ने नियामक निकाय हो। यो बीमक, मध्यस्थ र सर्वेक्षकहरूलाई इजाजतपत्र दिने; बीमा उत्पादन र प्रिमियम दर स्वीकृत गर्ने; शोधक्षमता र वित्तीय स्वास्थ्य अनुगमन गर्ने; बीमितको हित संरक्षण गर्ने; र बजार विकास प्रवर्धन गर्ने जिम्मेवार छ।',
+      keywords: ['insurance authority', 'regulator', 'bima adhikaran', 'license', 'solvency monitoring', 'policyholder protection', 'market development'],
+    ),
+
+    LegalDocument(
+      id: 'health_001',
+      titleEn: 'Public Health Service Act',
+      titleNp: 'सार्वजनिक स्वास्थ्य सेवा ऐन',
+      category: 'Health Law',
+      contentEn: 'The Public Health Service Act establishes the framework for the delivery of public health services in Nepal. It covers preventive, curative, and promotional health services. The act mandates free basic health services at government health facilities. It establishes health service standards, patient rights, and complaint mechanisms. The Ministry of Health and Population is responsible for implementing the act. The act also addresses health workforce planning, health infrastructure, and quality assurance in health service delivery.',
+      contentNp: 'सार्वजनिक स्वास्थ्य सेवा ऐनले नेपालमा सार्वजनिक स्वास्थ्य सेवा प्रवाहको लागि ढाँचा स्थापित गर्दछ। यसले रोकथाम, उपचार र प्रवर्धनात्मक स्वास्थ्य सेवा समेट्दछ। ऐनले सरकारी स्वास्थ्य संस्थाहरूमा नि:शुल्क आधारभूत स्वास्थ्य सेवा अनिवार्य गरेको छ। यसले स्वास्थ्य सेवा मापदण्ड, बिरामी अधिकार र उजुरी संयन्त्र स्थापित गर्दछ।',
+      keywords: ['public health', 'health service', 'free health', 'sarbajanik swasthya', 'patient rights', 'health facility', 'quality assurance'],
+    ),
+
+    LegalDocument(
+      id: 'health_002',
+      titleEn: 'Medical Council Regulation',
+      titleNp: 'चिकित्सक परिषद नियमन',
+      category: 'Health Law',
+      contentEn: 'The Nepal Medical Council regulates the medical profession in Nepal. It is responsible for registering medical practitioners, accrediting medical education institutions, and maintaining professional standards. All doctors must be registered with the Council to practice medicine in Nepal. The Council also handles complaints against medical professionals and can impose disciplinary actions including suspension or revocation of licenses. Continuing medical education is mandatory for license renewal.',
+      contentNp: 'नेपाल चिकित्सक परिषदले नेपालमा चिकित्सा पेशालाई नियमन गर्दछ। यो चिकित्सकहरूको दर्ता, चिकित्सा शिक्षा संस्थाहरूको मान्यता र व्यावसायिक मापदण्ड कायम राख्न जिम्मेवार छ। नेपालमा चिकित्सा पेशा गर्न सबै डाक्टरहरू परिषदमा दर्ता हुनुपर्दछ। परिषदले चिकित्सकविरुद्ध उजुरीहरू पनि हेर्दछ।',
+      keywords: ['medical council', 'doctor registration', 'chikitsak parishad', 'medical license', 'professional standard', 'disciplinary action', 'CME'],
+    ),
+
+    LegalDocument(
+      id: 'health_003',
+      titleEn: 'Pharmaceutical Regulation',
+      titleNp: 'औषधि नियमन',
+      category: 'Health Law',
+      contentEn: 'The Department of Drug Administration regulates the manufacture, import, sale, and distribution of pharmaceuticals in Nepal. All drugs must be registered and approved before they can be marketed. The act sets quality standards for pharmaceutical products, inspects manufacturing facilities, and monitors adverse drug reactions. Pharmacies must be licensed and staffed by qualified pharmacists. The sale of counterfeit and expired drugs is strictly prohibited with severe penalties.',
+      contentNp: 'औषधि प्रशासन विभागले नेपालमा औषधिको उत्पादन, आयात, बिक्री र वितरणलाई नियमन गर्दछ। बजारमा बिक्री गर्नुअघि सबै औषधि दर्ता र स्वीकृत हुनुपर्दछ। ऐनले औषधि उत्पादनको गुणस्तर मापदण्ड सेट गर्दछ, उत्पादन सुविधाको निरीक्षण गर्दछ र प्रतिकूल औषधि प्रतिक्रियाको अनुगमन गर्दछ।',
+      keywords: ['pharmaceutical', 'drug regulation', 'aushadhi', 'pharmacy license', 'drug registration', 'quality control', 'counterfeit drugs'],
+    ),
+
+    LegalDocument(
+      id: 'health_004',
+      titleEn: 'Hospital and Health Facility Standards',
+      titleNp: 'अस्पताल र स्वास्थ्य संस्था मापदण्ड',
+      category: 'Health Law',
+      contentEn: 'Hospitals and health facilities must meet minimum standards for infrastructure, equipment, staffing, and patient care. The Ministry of Health sets classification criteria for different levels of health facilities. All health facilities must be registered and obtain operating licenses. Standards cover emergency services, infection control, waste management, patient records, and quality of care. Regular inspections are conducted to ensure compliance. Non-compliant facilities may face fines, suspension, or closure.',
+      contentNp: 'अस्पताल र स्वास्थ्य संस्थाहरूले पूर्वाधार, उपकरण, कर्मचारी र बिरामी हेरचाहको लागि न्यूनतम मापदण्ड पूरा गर्नुपर्दछ। स्वास्थ्य मन्त्रालयले विभिन्न तहको स्वास्थ्य संस्थाको लागि वर्गीकरण मापदण्ड निर्धारण गर्दछ। सबै स्वास्थ्य संस्थाहरू दर्ता हुनुपर्दछ र सञ्चालन इजाजतपत्र प्राप्त गर्नुपर्दछ।',
+      keywords: ['hospital', 'health facility', 'aspatal', 'swasthya sanstha', 'accreditation', 'operating license', 'quality standard', 'infection control'],
+    ),
+
+    LegalDocument(
+      id: 'health_005',
+      titleEn: 'Health Insurance and Social Security',
+      titleNp: 'स्वास्थ्य बीमा र सामाजिक सुरक्षा',
+      category: 'Health Law',
+      contentEn: 'The Government of Nepal operates a national health insurance program to provide universal health coverage. The Health Insurance Board manages the program, which covers inpatient and outpatient services, medicines, and diagnostics. Premiums are subsidized for poor and vulnerable populations. Social security programs provide additional health benefits to senior citizens, persons with disabilities, and single women. The program aims to reduce out-of-pocket health expenditure and improve healthcare access.',
+      contentNp: 'नेपाल सरकारले विश्वव्यापी स्वास्थ्य कभरेज प्रदान गर्न राष्ट्रिय स्वास्थ्य बीमा कार्यक्रम सञ्चालन गर्दछ। स्वास्थ्य बीमा बोर्डले कार्यक्रम व्यवस्थापन गर्दछ, जसले आन्तरिक र बाहिरी बिरामी सेवा, औषधि र निदान सेवा समेट्दछ। गरिब र कमजोर जनसङ्ख्याको लागि प्रिमियममा अनुदान दिइन्छ।',
+      keywords: ['health insurance', 'social security', 'swasthya bima', 'samajik suraksha', 'universal coverage', 'subsidy', 'senior citizen', 'out-of-pocket'],
+    ),
+
+    LegalDocument(
+      id: 'health_006',
+      titleEn: 'Mental Health Protection',
+      titleNp: 'मानसिक स्वास्थ्य संरक्षण',
+      category: 'Health Law',
+      contentEn: 'The Mental Health Act provides for the protection of rights of persons with mental illness, regulation of psychiatric treatment, and establishment of mental health services. It prohibits discrimination against persons with mental illness and ensures their right to treatment, confidentiality, and informed consent. The act regulates psychiatric hospitals, community-based mental health services, and involuntary admission procedures. It also addresses suicide prevention and mental health awareness.',
+      contentNp: 'मानसिक स्वास्थ्य ऐनले मानसिक रोग भएका व्यक्तिहरूको अधिकार संरक्षण, मनोचिकित्सा उपचारको नियमन र मानसिक स्वास्थ्य सेवाको स्थापनाको व्यवस्था गर्दछ। यसले मानसिक रोग भएका व्यक्तिहरूविरुद्ध भेदभाव निषेध गर्दछ र उपचारको अधिकार, गोपनीयता र सूचित सहमति सुनिश्चित गर्दछ।',
+      keywords: ['mental health', 'psychiatric', 'manasik swasthya', 'mental illness', 'psychiatric hospital', 'involuntary admission', 'discrimination', 'suicide prevention'],
+    ),
+
+    LegalDocument(
+      id: 'health_007',
+      titleEn: 'Traditional and Alternative Medicine',
+      titleNp: 'परम्परागत र वैकल्पिक चिकित्सा',
+      category: 'Health Law',
+      contentEn: 'Nepal recognizes traditional medicine systems including Ayurveda, homeopathy, and naturopathy alongside allopathic medicine. The Ayurveda and Alternative Medicine Act regulates the practice, education, and licensing of traditional medicine practitioners. The Department of Ayurveda promotes research and development of traditional medicine. Ayurvedic hospitals and clinics provide treatment using herbal medicines, dietary therapy, and lifestyle modifications. Integration of traditional and modern medicine is encouraged.',
+      contentNp: 'नेपालले एलोपैथिक चिकित्साको साथै आयुर्वेद, होमियोप्याथी र प्राकृतिक चिकित्सा लगायत परम्परागत चिकित्सा प्रणालीलाई मान्यता दिन्छ। आयुर्वेद तथा वैकल्पिक चिकित्सा ऐनले परम्परागत चिकित्सकहरूको अभ्यास, शिक्षा र इजाजतपत्रलाई नियमन गर्दछ। आयुर्वेद विभागले परम्परागत चिकित्साको अनुसन्धान र विकास प्रवर्धन गर्दछ।',
+      keywords: ['ayurveda', 'alternative medicine', 'homeopathy', 'paramparagat chikitsa', 'natural medicine', 'herbal', 'vaidya', 'traditional medicine'],
+    ),
+
+    LegalDocument(
+      id: 'health_008',
+      titleEn: 'Epidemic and Disease Control',
+      titleNp: 'महामारी र रोग नियन्त्रण',
+      category: 'Health Law',
+      contentEn: 'The Epidemic Disease Control Act gives the government powers to prevent and control outbreaks of infectious diseases. The government may declare an epidemic, impose quarantine measures, restrict movement, and order compulsory vaccination. Health authorities conduct surveillance, contact tracing, and public awareness campaigns during outbreaks. Non-compliance with epidemic control measures is a punishable offense. The act ensures that disease control measures respect human rights and are proportionate.',
+      contentNp: 'महामारी रोग नियन्त्रण ऐनले सरकारलाई सङ्क्रामक रोगको प्रकोप रोकथाम र नियन्त्रण गर्न अधिकार दिन्छ। सरकारले महामारी घोषणा गर्न, क्वारेन्टिन उपाय लागू गर्न, आवागमन प्रतिबन्ध लगाउन र अनिवार्य खोपको आदेश दिन सक्छ। स्वास्थ्य अधिकारीहरूले प्रकोपको समयमा निगरानी, सम्पर्क पत्ता लगाउने र सार्वजनिक जागरूकता अभियान सञ्चालन गर्दछन्।',
+      keywords: ['epidemic', 'disease control', 'quarantine', 'mahamari', 'infectious disease', 'vaccination', 'contact tracing', 'public health emergency'],
+    ),
+
+    LegalDocument(
+      id: 'agri_001',
+      titleEn: 'Land Use and Agriculture Policy',
+      titleNp: 'भू-उपयोग र कृषि नीति',
+      category: 'Agricultural Law',
+      contentEn: 'The Land Use Act classifies land into agricultural, residential, commercial, industrial, and public use categories. Agricultural land must be used for farming and related activities. Conversion of agricultural land to non-agricultural use requires permission from the relevant authority. The act aims to protect fertile agricultural land from haphazard urbanization. The government provides subsidies and incentives for agricultural production and productivity enhancement.',
+      contentNp: 'भू-उपयोग ऐनले जग्गालाई कृषि, आवासीय, व्यावसायिक, औद्योगिक र सार्वजनिक प्रयोग श्रेणीमा वर्गीकरण गर्दछ। कृषि जग्गा खेती र सम्बन्धित गतिविधिको लागि प्रयोग गर्नुपर्दछ। कृषि जग्गालाई गैर-कृषि प्रयोगमा रूपान्तरण गर्न सम्बन्धित निकायबाट अनुमति आवश्यक हुन्छ।',
+      keywords: ['agriculture', 'land use', 'krisi', 'bhu-upayog', 'farmland', 'subsidy', 'land conversion', 'productivity'],
+    ),
+
+    LegalDocument(
+      id: 'agri_002',
+      titleEn: 'Seed and Plant Protection',
+      titleNp: 'बीउ र बिरुवा संरक्षण',
+      category: 'Agricultural Law',
+      contentEn: 'The Seed Act regulates the quality of seeds used in agriculture. Only registered and certified seeds may be sold to farmers. The act establishes seed testing laboratories, certification procedures, and quality standards. Plant protection measures include pest control, disease management, and quarantine regulations for imported plants. The government maintains seed banks and promotes the use of climate-resilient and high-yielding varieties.',
+      contentNp: 'बीउ ऐनले कृषिमा प्रयोग हुने बीउको गुणस्तर नियमन गर्दछ। किसानहरूलाई दर्ता र प्रमाणित बीउ मात्र बेच्न सकिन्छ। ऐनले बीउ परीक्षण प्रयोगशाला, प्रमाणीकरण प्रक्रिया र गुणस्तर मापदण्ड स्थापित गर्दछ। बिरुवा संरक्षण उपायहरूमा कीरा नियन्त्रण, रोग व्यवस्थापन र आयातित बिरुवाको लागि क्वारेन्टिन नियमन समावेश हुन्छ।',
+      keywords: ['seed', 'plant protection', 'biu', 'biruwa sanrakshan', 'seed certification', 'pest control', 'quarantine', 'high-yield variety'],
+    ),
+
+    LegalDocument(
+      id: 'agri_003',
+      titleEn: 'Fertilizer and Pesticide Regulation',
+      titleNp: 'मल र कीटनाशक नियमन',
+      category: 'Agricultural Law',
+      contentEn: 'The Fertilizer and Pesticide Act regulates the import, production, sale, and use of agricultural inputs. Only registered fertilizers and pesticides that meet quality standards may be sold. The act restricts the use of highly toxic pesticides and promotes integrated pest management and organic farming. Adulterated or substandard fertilizers are prohibited. Violations result in fines and license revocation. The government provides subsidies on chemical and organic fertilizers to support farmers.',
+      contentNp: 'मल तथा कीटनाशक ऐनले कृषि सामग्रीको आयात, उत्पादन, बिक्री र प्रयोगलाई नियमन गर्दछ। गुणस्तर मापदण्ड पूरा गर्ने दर्ता भएका मल र कीटनाशक मात्र बेच्न सकिन्छ। ऐनले अत्यधिक विषालु कीटनाशकको प्रयोगलाई प्रतिबन्ध गर्दछ र एकीकृत कीरा व्यवस्थापन तथा जैविक खेती प्रवर्धन गर्दछ।',
+      keywords: ['fertilizer', 'pesticide', 'mal', 'kitnashak', 'organic farming', 'subsidy', 'integrated pest management', 'quality standard'],
+    ),
+
+    LegalDocument(
+      id: 'agri_004',
+      titleEn: 'Agricultural Marketing and Trade',
+      titleNp: 'कृषि बजारीकरण र व्यापार',
+      category: 'Agricultural Law',
+      contentEn: 'The Agricultural Marketing Act establishes mechanisms for the marketing and trade of agricultural produce. It regulates agricultural markets, market fees, and grading standards. Farmers have the right to sell their produce directly or through agricultural cooperatives and collection centers. The government establishes minimum support prices for key crops to protect farmers from price fluctuations. Cold storage facilities, transportation subsidies, and export promotion programs support agricultural trade.',
+      contentNp: 'कृषि बजारीकरण ऐनले कृषि उपजको बजारीकरण र व्यापारको लागि संयन्त्र स्थापित गर्दछ। यसले कृषि बजार, बजार शुल्क र ग्रेडिङ मापदण्ड नियमन गर्दछ। किसानहरूलाई आफ्नो उपज प्रत्यक्ष रूपमा वा कृषि सहकारी तथा सङ्कलन केन्द्रमार्फत बेच्ने अधिकार हुन्छ।',
+      keywords: ['agricultural marketing', 'market fee', 'krisi bajar', 'minimum support price', 'cold storage', 'agricultural cooperative', 'export'],
+    ),
+
+    LegalDocument(
+      id: 'agri_005',
+      titleEn: 'Livestock and Animal Health',
+      titleNp: 'पशुपालन र पशु स्वास्थ्य',
+      category: 'Agricultural Law',
+      contentEn: 'The Livestock Act regulates animal husbandry, livestock production, and animal health in Nepal. It provides for disease prevention, veterinary services, and animal breeding programs. Livestock farmers must register their animals and follow animal health protocols. The act addresses animal diseases including foot-and-mouth disease, bird flu, and swine fever. Veterinary hospitals and clinics provide treatment and vaccination services. Animal feed quality and slaughterhouse operations are also regulated.',
+      contentNp: 'पशुपालन ऐनले नेपालमा पशुपालन, पशु उत्पादन र पशु स्वास्थ्यलाई नियमन गर्दछ। यसले रोग रोकथाम, पशु चिकित्सा सेवा र पशु प्रजनन कार्यक्रमको व्यवस्था गर्दछ। पशुपालक किसानहरूले आफ्ना पशुहरू दर्ता गर्नुपर्दछ र पशु स्वास्थ्य प्रोटोकल पालना गर्नुपर्दछ।',
+      keywords: ['livestock', 'animal health', 'pashupalan', 'pasu swasthya', 'veterinary', 'animal disease', 'vaccination', 'slaughterhouse'],
+    ),
+
+    LegalDocument(
+      id: 'agri_006',
+      titleEn: 'Irrigation and Water Management',
+      titleNp: 'सिँचाइ र पानी व्यवस्थापन',
+      category: 'Agricultural Law',
+      contentEn: 'The Irrigation Act governs the development and management of irrigation systems in Nepal. It provides for the construction, operation, and maintenance of irrigation infrastructure including canals, reservoirs, and pumping stations. Water users associations are formed at the local level to manage irrigation distribution. The act promotes efficient water use through modern irrigation technologies including drip and sprinkler systems. Water allocation during scarcity follows established priorities.',
+      contentNp: 'सिँचाइ ऐनले नेपालमा सिँचाइ प्रणालीको विकास र व्यवस्थापनलाई नियमन गर्दछ। यसले नहर, जलाशय र पम्पिङ स्टेशन सहित सिँचाइ पूर्वाधारको निर्माण, सञ्चालन र मर्मतको व्यवस्था गर्दछ। स्थानीय स्तरमा सिँचाइ वितरण व्यवस्थापन गर्न पानी उपभोक्ता समितिहरू गठन गरिन्छ।',
+      keywords: ['irrigation', 'water management', 'sinchai', 'pani byavasthapan', 'canal', 'water users association', 'drip irrigation', 'water allocation'],
+    ),
+
+    LegalDocument(
+      id: 'agri_007',
+      titleEn: 'Agricultural Credit and Insurance',
+      titleNp: 'कृषि ऋण र बीमा',
+      category: 'Agricultural Law',
+      contentEn: 'The government provides agricultural credit through banks and financial institutions at subsidized interest rates. The Agriculture Development Bank and other commercial banks offer crop loans, livestock loans, and equipment financing. Agricultural insurance protects farmers against crop failure due to natural disasters, pests, and diseases. The government subsidizes insurance premiums for small and marginal farmers. Loan repayment schedules are flexible based on harvest cycles.',
+      contentNp: 'सरकारले सहुलियत ब्याजदरमा बैंक तथा वित्तीय संस्थामार्फत कृषि ऋण प्रदान गर्दछ। कृषि विकास बैंक र अन्य वाणिज्य बैंकहरूले बाली ऋण, पशु ऋण र उपकरण वित्तीयकरण प्रदान गर्दछन्। कृषि बीमाले प्राकृतिक प्रकोप, कीरा र रोगका कारण बाली नष्ट हुँदा किसानलाई संरक्षण प्रदान गर्दछ।',
+      keywords: ['agricultural credit', 'crop loan', 'krisi rin', 'bali beema', 'interest subsidy', 'Agriculture Development Bank', 'loan', 'crop insurance'],
+    ),
+
+    LegalDocument(
+      id: 'agri_008',
+      titleEn: 'Food Security and Nutrition',
+      titleNp: 'खाद्य सुरक्षा र पोषण',
+      category: 'Agricultural Law',
+      contentEn: 'The Food Security Act guarantees the right to food for all citizens. The government maintains strategic food reserves, implements food distribution programs, and provides emergency food assistance during disasters. Nutrition programs address malnutrition among women, children, and vulnerable groups. The act promotes sustainable agriculture, food fortification, and dietary diversification. Local food production and farmers markets are encouraged to improve access to nutritious food.',
+      contentNp: 'खाद्य सुरक्षा ऐनले सबै नागरिकको लागि खाद्य अधिकारको ग्यारेन्टी गर्दछ। सरकारले रणनीतिक खाद्य भण्डार कायम राख्दछ, खाद्य वितरण कार्यक्रम कार्यान्वयन गर्दछ र प्रकोपको समयमा आपतकालीन खाद्य सहायता प्रदान गर्दछ। पोषण कार्यक्रमहरूले महिला, बालबालिका र कमजोर समूहहरूबीच कुपोषणलाई सम्बोधन गर्दछ।',
+      keywords: ['food security', 'nutrition', 'khadya suraksha', 'poshan', 'food reserve', 'food distribution', 'malnutrition', 'food fortification'],
+    ),
+
+    LegalDocument(
+      id: 'const_007',
+      titleEn: 'Right to Education and Culture',
+      titleNp: 'शिक्षा र संस्कृतिको हक',
+      category: 'Constitution',
+      contentEn: 'Every citizen has the right to access quality education at all levels. The state shall provide free and compulsory education to children up to the secondary level. Citizens have the right to participate in cultural life and preserve their language and heritage. Educational institutions shall promote national unity, social harmony, and respect for diverse cultures. The state shall establish educational and cultural institutions in rural and remote areas. Higher education shall be accessible based on merit and capacity.',
+      contentNp: 'प्रत्येक नागरिकलाई सबै तहमा गुणस्तरीय शिक्षामा पहुँच पाउने हक छ। राज्यले माध्यमिक तहसम्म बालबालिकालाई नि:शुल्क र अनिवार्य शिक्षा प्रदान गर्नेछ। नागरिकहरूलाई सांस्कृतिक जीवनमा भाग लिने र आफ्नो भाषा तथा सम्पदा संरक्षण गर्ने अधिकार छ। शैक्षिक संस्थाहरूले राष्ट्रिय एकता, सामाजिक सद्भाव र विविध संस्कृतिको सम्मान प्रवर्धन गर्नेछन्।',
+      keywords: ['education right', 'cultural right', 'free education', 'shiksha hak', 'sanskritik hak', 'secondary education', 'national unity', 'cultural diversity'],
+    ),
+
+    LegalDocument(
+      id: 'const_008',
+      titleEn: 'Right to Employment and Social Security',
+      titleNp: 'रोजगार र सामाजिक सुरक्षाको हक',
+      category: 'Constitution',
+      contentEn: 'Every citizen has the right to work and pursue employment of their choice. The state shall pursue policies to achieve full employment and ensure just and favorable working conditions. Citizens unable to work due to disability, old age, or other causes shall receive social security benefits. The state shall establish social security programs including health insurance, old age allowance, and disability benefits. Workers have the right to form trade unions and engage in collective bargaining.',
+      contentNp: 'प्रत्येक नागरिकलाई काम गर्ने र आफूले रोजेको रोजगारी गर्ने हक छ। राज्यले पूर्ण रोजगारी प्राप्त गर्न र न्यायपूर्ण तथा अनुकूल कार्यस्थलको सुनिश्चितता गर्न नीति अवलम्बन गर्नेछ। अपाङ्गता, वृद्धावस्था वा अन्य कारणले काम गर्न नसक्ने नागरिकहरूले सामाजिक सुरक्षा लाभ प्राप्त गर्नेछन्।',
+      keywords: ['employment right', 'social security', 'rojagar hak', 'samajik suraksha', 'full employment', 'trade union', 'old age allowance', 'disability benefit'],
+    ),
+
+    LegalDocument(
+      id: 'const_009',
+      titleEn: 'Right to Clean Environment',
+      titleNp: 'स्वच्छ वातावरणको हक',
+      category: 'Constitution',
+      contentEn: 'Every person has the right to live in a clean and healthy environment. The state shall pursue policies to protect, conserve, and enhance the environment. The right includes access to clean air, water, and sanitation facilities. Citizens may file public interest litigation to enforce environmental rights. The state shall create awareness about environmental conservation and sustainable development. Responsibilities include the protection of forests, wildlife, and natural heritage.',
+      contentNp: 'प्रत्येक व्यक्तिलाई स्वच्छ र स्वस्थ वातावरणमा बाँच्ने हक छ। राज्यले वातावरणको संरक्षण, संरक्षण र अभिवृद्धिको लागि नीति अवलम्बन गर्नेछ। यस हकमा स्वच्छ हावा, पानी र सरसफाइ सुविधामा पहुँच समावेश छ। नागरिकहरूले वातावरणीय अधिकार कार्यान्वयन गर्न सार्वजनिक सरोकारको मुद्दा दायर गर्न सक्छन्।',
+      keywords: ['environment right', 'clean environment', 'swachha vatavaran', 'public interest litigation', 'conservation', 'sustainable development', 'wildlife protection'],
+    ),
+
+    LegalDocument(
+      id: 'civil_008',
+      titleEn: 'Partnership and Joint Venture Law',
+      titleNp: 'साझेदारी र संयुक्त उद्यम कानून',
+      category: 'Civil Law',
+      contentEn: 'A partnership is a business relationship between two or more persons who agree to share profits and losses. The Partnership Act governs the formation, operation, and dissolution of partnerships. Partnerships may be registered or unregistered, with registered partnerships enjoying certain legal benefits. Joint ventures are contractual arrangements where parties undertake a specific business project together. Each partner is jointly and severally liable for partnership debts. Partners owe fiduciary duties to each other including good faith and full disclosure.',
+      contentNp: 'साझेदारी दुई वा दुईभन्दा बढी व्यक्तिहरूबीच नाफा र नोक्सान बाँड्न सहमत भएको व्यावसायिक सम्बन्ध हो। साझेदारी ऐनले साझेदारीको गठन, सञ्चालन र विघटनलाई नियमन गर्दछ। साझेदारी दर्ता वा अदर्ता हुन सक्छ, दर्ता भएको साझेदारीले निश्चित कानूनी लाभ प्राप्त गर्दछ।',
+      keywords: ['partnership', 'joint venture', 'sajhedari', 'sanyukta udyam', 'partner liability', 'fiduciary duty', 'partnership registration', 'profit sharing'],
+    ),
+
+    LegalDocument(
+      id: 'civil_009',
+      titleEn: 'Arbitration and Alternative Dispute Resolution',
+      titleNp: 'मध्यस्थता र वैकल्पिक विवाद समाधान',
+      category: 'Civil Law',
+      contentEn: 'Alternative dispute resolution mechanisms include arbitration, mediation, conciliation, and negotiation. The Arbitration Act provides for the settlement of disputes through arbitration without resorting to litigation. Arbitration agreements are binding, and arbitral awards are enforceable as court judgments. Mediation involves a neutral third party facilitating negotiation between disputing parties. Courts may refer pending cases to mediation. ADR mechanisms reduce court backlog and provide faster, more cost-effective resolution.',
+      contentNp: 'वैकल्पिक विवाद समाधान संयन्त्रहरूमा मध्यस्थता, सुलह, मेलमिलाप र वार्ता समावेश छन्। मध्यस्थता ऐनले मुद्दा नचलाई मध्यस्थतामार्फत विवाद समाधानको व्यवस्था गर्दछ। मध्यस्थता सम्झौता बाध्यकारी हुन्छ र मध्यस्थ आदेश अदालतको फैसलाजस्तै लागू हुन्छ।',
+      keywords: ['arbitration', 'mediation', 'conciliation', 'madhyasthata', 'sulah', 'ADR', 'arbitral award', 'dispute resolution'],
+    ),
+
+    LegalDocument(
+      id: 'civil_010',
+      titleEn: 'Registration of Documents and Deeds',
+      titleNp: 'कागजात र लिखत दर्ता',
+      category: 'Civil Law',
+      contentEn: 'Certain documents and deeds must be registered with the appropriate government authority to be legally valid. The Registration of Documents Act requires registration of deeds relating to immovable property, marriage settlements, partnership deeds, and powers of attorney. Registered documents are admissible as primary evidence in court. The registration process involves verification of identity, payment of stamp duty and registration fees, and recording in the official register. Unregistered documents may still be admissible as secondary evidence.',
+      contentNp: 'निश्चित कागजात र लिखतहरू कानूनी रूपमा वैध हुनको लागि उपयुक्त सरकारी निकायमा दर्ता गरिनुपर्दछ। कागजात दर्ता ऐनले स्थावर सम्पत्ति, विवाह बन्डोस्ती, साझेदारी लिखत र मुख्तियारनामासँग सम्बन्धित लिखतहरूको दर्ता आवश्यक गर्दछ। दर्ता गरिएका कागजातहरू अदालतमा प्राथमिक प्रमाणको रूपमा स्वीकार्य हुन्छन्।',
+      keywords: ['document registration', 'deed', 'kagajat darta', 'stamp duty', 'registration fee', 'primary evidence', 'power of attorney', 'lilapat'],
+    ),
+LegalDocument(
+      id: 'local_006',
+      titleEn: 'Public Hearing and Citizen Participation',
+      titleNp: 'सार्वजनिक सुनुवाइ र नागरिक सहभागिता',
+      category: 'Local Governance',
+      contentEn: 'Local governments must conduct public hearings on important matters including budget formulation, development planning, and service delivery. Citizens have the right to participate in local governance through public hearings, ward committees, and citizen charters. The Local Government Operation Act mandates citizen participation in planning and decision-making processes. Feedback mechanisms include suggestion boxes, help desks, and social audits. Citizen participation enhances transparency, accountability, and responsiveness of local governments.',
+      contentNp: 'स्थानीय सरकारहरूले बजेट निर्माण, विकास योजना र सेवा प्रवाह लगायत महत्त्वपूर्ण विषयहरूमा सार्वजनिक सुनुवाइ गर्नुपर्दछ। नागरिकहरूलाई सार्वजनिक सुनुवाइ, वडा समिति र नागरिक वडापत्रमार्फत स्थानीय शासनमा भाग लिने अधिकार छ। स्थानीय सरकार सञ्चालन ऐनले योजना र निर्णय प्रक्रियामा नागरिक सहभागिता अनिवार्य गर्दछ।',
+      keywords: ['public hearing', 'citizen participation', 'sarbajanik sunuvai', 'nagarik sahabhagita', 'social audit', 'citizen charter', 'ward committee'],
+    ),
+
+    LegalDocument(
+      id: 'local_007',
+      titleEn: 'Local Infrastructure Development',
+      titleNp: 'स्थानीय पूर्वाधार विकास',
+      category: 'Local Governance',
+      contentEn: 'Local governments are responsible for the development and maintenance of local infrastructure including local roads, bridges, water supply systems, drainage, street lighting, and public buildings. Infrastructure projects are planned through the participatory planning process. Local governments may implement projects through contractors, user committees, or public-private partnerships. Quality standards and environmental safeguards must be observed in all infrastructure projects.',
+      contentNp: 'स्थानीय सरकारहरू स्थानीय सडक, पुल, खानेपानी प्रणाली, निकास, सडक बत्ती र सार्वजनिक भवन लगायत स्थानीय पूर्वाधारको विकास र मर्मतको लागि जिम्मेवार छन्। पूर्वाधार परियोजनाहरू सहभागितामूलक योजना प्रक्रियामार्फत योजना गरिन्छ। स्थानीय सरकारहरूले ठेकेदार, उपभोक्ता समिति वा सार्वजनिक-निजी साझेदारीमार्फत परियोजना कार्यान्वयन गर्न सक्छन्।',
+      keywords: ['infrastructure', 'local roads', 'water supply', 'purvadhar', 'user committee', 'public-private partnership', 'quality standard'],
+    ),
+
+    LegalDocument(
+      id: 'local_008',
+      titleEn: 'Local Disaster Management',
+      titleNp: 'स्थानीय विपद् व्यवस्थापन',
+      category: 'Local Governance',
+      contentEn: 'Local governments are the first responders in disaster situations and play a key role in disaster risk reduction and management. They prepare local disaster management plans, conduct risk assessments, and establish early warning systems. During emergencies, local governments coordinate search and rescue, relief distribution, and temporary shelter management. They also lead post-disaster reconstruction and rehabilitation efforts. Local disaster management committees are formed at municipal and ward levels.',
+      contentNp: 'स्थानीय सरकारहरू विपद् अवस्थामा पहिलो प्रतिकारक हुन् र विपद् जोखिम न्यूनीकरण र व्यवस्थापनमा मुख्य भूमिका खेल्दछन्। तिनीहरूले स्थानीय विपद् व्यवस्थापन योजना तयार गर्दछन्, जोखिम मूल्याङ्कन गर्दछन् र पूर्व चेतावनी प्रणाली स्थापित गर्दछन्। आपतकालीन अवस्थामा, स्थानीय सरकारहरूले खोज तथा उद्धार, राहत वितरण र अस्थायी आश्रय व्यवस्थापनको समन्वय गर्दछन्।',
+      keywords: ['disaster management', 'bipad byavasthapan', 'emergency response', 'early warning', 'search and rescue', 'relief distribution', 'reconstruction'],
+    ),
+
+    LegalDocument(
+      id: 'prop_006',
+      titleEn: 'Mortgage and Lien on Property',
+      titleNp: 'सम्पत्ति धितो र प्रतिभार',
+      category: 'Property Law',
+      contentEn: 'Mortgage is the transfer of an interest in immovable property as security for a loan or debt. The mortgagor retains possession of the property while the mortgagee holds the right to recover the debt from the property. Lien is the right of a creditor to retain possession of a debtor property until the debt is paid. The Transfer of Property Act governs mortgages and liens. Registration of mortgage deeds is required. Foreclosure procedures allow lenders to recover defaulted loans through property sale.',
+      contentNp: 'धितो भनेको ऋणको सुरक्षाको रूपमा स्थावर सम्पत्तिमा हितको हस्तान्तरण हो। धितो राख्ने व्यक्तिले सम्पत्तिको कब्जा राख्दछ जबकि धितो राख्ने व्यक्तिलाई सम्पत्तिबाट ऋण असुल गर्ने अधिकार हुन्छ। सम्पत्ति हस्तान्तरण ऐनले धितो र प्रतिभारलाई नियमन गर्दछ। धितो लिखतको दर्ता आवश्यक हुन्छ।',
+      keywords: ['mortgage', 'lien', 'dhito', 'pratibhar', 'foreclosure', 'loan security', 'property charge', 'debt recovery'],
+    ),
+
+    LegalDocument(
+      id: 'prop_007',
+      titleEn: 'Easement and Right of Way',
+      titleNp: 'सुविधा र बाटो अधिकार',
+      category: 'Property Law',
+      contentEn: 'Easement is the right of a person to use the land of another for a specific purpose, such as a right of way or drainage. Easements may be created by agreement, prescription, necessity, or by operation of law. An easement is attached to the dominant land and runs with the land. The servient owner must not interfere with the reasonable exercise of the easement. Easements are recorded in the land records. Extinguishment of easements occurs by release, merger, or abandonment.',
+      contentNp: 'सुविधा भनेको कुनै व्यक्तिको विशिष्ट उद्देश्यको लागि अर्कोको जग्गा प्रयोग गर्ने अधिकार हो, जस्तै बाटो अधिकार वा निकास। सुविधा सम्झौता, व्यवहार, आवश्यकता वा कानूनको सञ्चालनद्वारा सिर्जना गर्न सकिन्छ। सुविधा प्रभावित जग्गासँग संलग्न हुन्छ र त्यस जग्गासँगै हस्तान्तरण हुन्छ।',
+      keywords: ['easement', 'right of way', 'suvidha', 'bato adhikar', 'servient land', 'dominant land', 'drainage', 'land record'],
+    ),
+
+    LegalDocument(
+      id: 'prop_008',
+      titleEn: 'Adverse Possession of Land',
+      titleNp: 'जग्गाको प्रतिकूल कब्जा',
+      category: 'Property Law',
+      contentEn: 'Adverse possession is a doctrine that allows a person to acquire legal title to land through continuous, open, and hostile possession for a statutory period. In Nepal, the limitation period for acquiring title by adverse possession is twelve years. The possession must be actual, exclusive, continuous, and hostile. The adverse possessor must pay land revenue during the possession period. Successful adverse possession claimants may apply for title registration.',
+      contentNp: 'प्रतिकूल कब्जा एक सिद्धान्त हो जसले व्यक्तिलाई वैधानिक अवधिको लागि निरन्तर, खुला र प्रतिकूल कब्जामार्फत जग्गामा कानूनी स्वामित्व प्राप्त गर्न अनुमति दिन्छ। नेपालमा, प्रतिकूल कब्जाद्वारा स्वामित्व प्राप्त गर्ने सीमा अवधि बाह्र वर्ष हो। कब्जा वास्तविक, एकल, निरन्तर र प्रतिकूल हुनुपर्दछ।',
+      keywords: ['adverse possession', 'pratikul kabja', 'title by possession', 'limitation', 'sima awadhi', 'land registration', 'possession period'],
+    ),
+
+    LegalDocument(
+      id: 'public_006',
+      titleEn: 'Civil Service and Government Employment',
+      titleNp: 'निजामती सेवा र सरकारी रोजगार',
+      category: 'Public Administration',
+      contentEn: 'The Civil Service Act governs the recruitment, promotion, discipline, and conditions of service for civil servants in Nepal. The Public Service Commission conducts competitive examinations for permanent civil service positions. Civil servants are classified into gazetted and non-gazetted categories. Promotion is based on seniority, performance, and examinations. Disciplinary actions for misconduct include warnings, suspension, demotion, and dismissal. The Civil Service Code of Conduct requires impartiality, integrity, and dedication.',
+      contentNp: 'निजामती सेवा ऐनले नेपालमा निजामती कर्मचारीहरूको भर्ती, पदोन्नति, अनुशासन र सेवाका सर्तहरू नियमन गर्दछ। लोक सेवा आयोगले स्थायी निजामती सेवा पदको लागि प्रतिस्पर्धात्मक परीक्षा सञ्चालन गर्दछ। निजामती कर्मचारीहरूलाई राजपत्राङ्कित र गैर-राजपत्राङ्कित श्रेणीमा वर्गीकृत गरिन्छ।',
+      keywords: ['civil service', 'nijamati seva', 'Public Service Commission', 'recruitment', 'promotion', 'code of conduct', 'disciplinary action'],
+    ),
+
+    LegalDocument(
+      id: 'public_007',
+      titleEn: 'Right to Information and Transparency',
+      titleNp: 'सूचनाको हक र पारदर्शिता',
+      category: 'Public Administration',
+      contentEn: 'The Right to Information Act gives citizens the right to access information held by public bodies. Citizens may request information by filing an application with the concerned public body. The public body must provide the requested information within fifteen days. Information officers are designated in each public body to facilitate access. Certain information may be withheld for reasons of national security, privacy, or confidentiality. The National Information Commission hears complaints and ensures compliance.',
+      contentNp: 'सूचनाको हक ऐनले नागरिकहरूलाई सार्वजनिक निकायसँग रहेको सूचनामा पहुँच पाउने अधिकार दिन्छ। नागरिकहरूले सम्बन्धित सार्वजनिक निकायमा निवेदन दिएर सूचना माग्न सक्छन्। सार्वजनिक निकायले पन्ध्र दिनभित्र अनुरोधित सूचना प्रदान गर्नुपर्दछ। प्रत्येक सार्वजनिक निकायमा सूचना अधिकारी नियुक्त गरिन्छ।',
+      keywords: ['right to information', 'soochana ko hak', 'transparency', 'pordarshita', 'National Information Commission', 'public body', 'information officer'],
+    ),
+
+    LegalDocument(
+      id: 'public_008',
+      titleEn: 'Administrative Tribunals and Review',
+      titleNp: 'प्रशासनिक न्यायाधिकरण र पुनरावलोकन',
+      category: 'Public Administration',
+      contentEn: 'Administrative tribunals adjudicate disputes between citizens and government authorities. The Administrative Court hears cases related to civil service matters, government contracts, and administrative decisions. Citizens may appeal administrative decisions to higher authorities or the Administrative Court. Tribunals follow simplified procedures compared to regular courts. Judicial review of tribunal decisions is available through the Supreme Court. The principle of natural justice must be observed in all administrative proceedings.',
+      contentNp: 'प्रशासनिक न्यायाधिकरणहरूले नागरिक र सरकारी निकायबीचको विवादको निरुपण गर्दछन्। प्रशासनिक अदालतले निजामती सेवा मामिला, सरकारी सम्झौता र प्रशासनिक निर्णयसँग सम्बन्धित मुद्दाहरू सुन्दछ। नागरिकहरूले प्रशासनिक निर्णयविरुद्ध माथिल्लो अधिकारी वा प्रशासनिक अदालतमा पुनरावेदन गर्न सक्छन्।',
+      keywords: ['administrative tribunal', 'prashasanik nyayadikaran', 'administrative court', 'judicial review', 'natural justice', 'appeal', 'government decision'],
+    ),
+
+    LegalDocument(
+      id: 'human_006',
+      titleEn: 'Rights of Persons with Disabilities',
+      titleNp: 'अपाङ्गता भएका व्यक्तिहरूको अधिकार',
+      category: 'Human Rights',
+      contentEn: 'The Rights of Persons with Disabilities Act ensures the rights and dignity of persons with disabilities. It prohibits discrimination on grounds of disability and mandates reasonable accommodation in public spaces, transportation, education, and employment. The act provides for accessible infrastructure, sign language interpretation, and assistive technology. Persons with disabilities have the right to participate in political, social, and cultural life. Disability identification cards enable access to benefits and services.',
+      contentNp: 'अपाङ्गता भएका व्यक्तिहरूको अधिकार ऐनले अपाङ्गता भएका व्यक्तिहरूको अधिकार र मर्यादा सुनिश्चित गर्दछ। यसले अपाङ्गताको आधारमा भेदभाव निषेध गर्दछ र सार्वजनिक स्थल, यातायात, शिक्षा र रोजगारमा उचित सुविधा अनिवार्य गर्दछ। ऐनले पहुँचयोग्य पूर्वाधार, साङ्केतिक भाषा व्याख्या र सहायक प्रविधिको व्यवस्था गर्दछ।',
+      keywords: ['disability rights', 'apangata', 'reasonable accommodation', 'accessible infrastructure', 'sign language', 'assistive technology', 'disability ID'],
+    ),
+
+    LegalDocument(
+      id: 'human_007',
+      titleEn: 'Rights of Women and Gender Equality',
+      titleNp: 'महिला अधिकार र लैङ्गिक समानता',
+      category: 'Human Rights',
+      contentEn: 'The Constitution guarantees equal rights for women in all spheres of life. Specific legislation addresses gender-based violence, reproductive rights, workplace harassment, and property rights. Women have the right to equal pay for equal work, maternity protection, and representation in decision-making bodies. The government implements policies for women empowerment including education, health, and economic opportunities. Special provisions exist for Dalit women, rural women, and conflict-affected women.',
+      contentNp: 'संविधानले जीवनका सबै क्षेत्रमा महिलाको लागि समान अधिकारको ग्यारेन्टी गर्दछ। विशिष्ट कानूनले लैङ्गिक हिंसा, प्रजनन अधिकार, कार्यस्थल उत्पीडन र सम्पत्ति अधिकारलाई सम्बोधन गर्दछ। महिलाहरूलाई समान कामको लागि समान ज्याला, मातृत्व संरक्षण र निर्णय प्रक्रियामा प्रतिनिधित्वको अधिकार छ।',
+      keywords: ['women rights', 'mohila adhikar', 'gender equality', 'laingik samanta', 'gender-based violence', 'maternity protection', 'equal pay', 'reproductive rights'],
+    ),
+
+    LegalDocument(
+      id: 'human_008',
+      titleEn: 'Indigenous Peoples and Ethnic Rights',
+      titleNp: 'आदिवासी जनजाति र जातीय अधिकार',
+      category: 'Human Rights',
+      contentEn: 'Indigenous peoples have the right to maintain and develop their distinct cultural identities, languages, traditions, and customary governance systems. The Constitution recognizes the rights of indigenous nationalities (Adivasi Janajati) and provides for their participation in state structures. The Indigenous Peoples Act protects their rights to land, resources, and traditional knowledge. The government has established the National Foundation for Development of Indigenous Nationalities.',
+      contentNp: 'आदिवासी जनजातिहरूलाई आफ्नो विशिष्ट सांस्कृतिक पहिचान, भाषा, परम्परा र परम्परागत शासन प्रणाली कायम राख्ने र विकास गर्ने अधिकार छ। संविधानले आदिवासी जनजातिको अधिकार मान्यता दिन्छ र राज्य संरचनामा उनीहरूको सहभागिताको व्यवस्था गर्दछ। आदिवासी जनजाति ऐनले उनीहरूको भूमि, स्रोत र परम्परागत ज्ञानको अधिकार संरक्षण गर्दछ।',
+      keywords: ['indigenous rights', 'adivasi janajati', 'ethnic rights', 'jatiya adhikar', 'traditional knowledge', 'cultural identity', 'customary governance', 'land rights'],
+    ),
+
+    LegalDocument(
+      id: 'tech_005',
+      titleEn: 'Data Protection and Privacy',
+      titleNp: 'डाटा संरक्षण र गोपनीयता',
+      category: 'Technology Law',
+      contentEn: 'The protection of personal data and privacy is increasingly important in the digital age. Nepal is developing comprehensive data protection legislation to regulate the collection, processing, storage, and sharing of personal information. Data controllers must obtain consent before collecting personal data, ensure data security, and respect individuals rights to access, correct, and delete their data. Breaches of data protection requirements may result in penalties and liability for damages.',
+      contentNp: 'डिजिटल युगमा व्यक्तिगत डाटा र गोपनीयताको संरक्षण बढ्दो रूपमा महत्त्वपूर्ण छ। नेपालले व्यक्तिगत जानकारीको सङ्कलन, प्रशोधन, भण्डारण र साझेदारीलाई नियमन गर्न व्यापक डाटा संरक्षण कानून विकास गरिरहेको छ। डाटा नियन्त्रकहरूले व्यक्तिगत डाटा सङ्कलन गर्नुअघि सहमति लिनुपर्दछ, डाटा सुरक्षा सुनिश्चित गर्नुपर्दछ।',
+      keywords: ['data protection', 'privacy', 'data privacy', 'gopaniyata', 'personal data', 'consent', 'data breach', 'data security'],
+    ),
+
+    LegalDocument(
+      id: 'tech_006',
+      titleEn: 'Digital Payment and Financial Technology',
+      titleNp: 'डिजिटल भुक्तानी र वित्तीय प्रविधि',
+      category: 'Technology Law',
+      contentEn: 'Digital payment systems including mobile banking, internet banking, digital wallets, and QR code payments are regulated by Nepal Rastra Bank. The Payment and Settlement Systems Act provides the legal framework for digital payments. Fintech companies must obtain licenses and comply with anti-money laundering requirements. Consumer protection measures include transaction limits, dispute resolution mechanisms, and data security standards. The government promotes cashless transactions through policy incentives.',
+      contentNp: 'मोबाइल बैंकिङ, इन्टरनेट बैंकिङ, डिजिटल वालेट र क्यूआर कोड भुक्तानी सहित डिजिटल भुक्तानी प्रणाली नेपाल राष्ट्र बैंकद्वारा नियमन गरिन्छ। भुक्तानी तथा फर्छ्यौट प्रणाली ऐनले डिजिटल भुक्तानीको लागि कानूनी ढाँचा प्रदान गर्दछ। फिनटेक कम्पनीहरूले इजाजतपत्र प्राप्त गर्नुपर्दछ र मनी लान्ड्रिङ विरोधी आवश्यकता पालना गर्नुपर्दछ।',
+      keywords: ['digital payment', 'fintech', 'mobile banking', 'digital bhuktani', 'QR payment', 'Nepal Rastra Bank', 'AML', 'payment system'],
+    ),
+
+    LegalDocument(
+      id: 'tech_007',
+      titleEn: 'Social Media Regulation',
+      titleNp: 'सामाजिक सञ्जल नियमन',
+      category: 'Technology Law',
+      contentEn: 'The use of social media platforms is subject to Nepalese laws including the Electronic Transactions Act and the Criminal Code. The government may require social media companies to establish offices in Nepal, comply with content moderation rules, and provide user data upon lawful request. Hate speech, misinformation, and content that threatens public order may be removed. Social media companies must have grievance redressal mechanisms for users in Nepal.',
+      contentNp: 'सामाजिक सञ्जल प्लेटफर्मको प्रयोग विद्युतीय कारोबार ऐन र फौजदारी संहिता लगायत नेपाली कानूनको अधीनमा छ। सरकारले सामाजिक सञ्जल कम्पनीहरूलाई नेपालमा कार्यालय स्थापना गर्न, सामग्री मध्यस्थता नियम पालना गर्न र कानूनी अनुरोधमा प्रयोगकर्ता डाटा प्रदान गर्न आवश्यक गर्न सक्छ।',
+      keywords: ['social media', 'samajik sanjal', 'content moderation', 'hate speech', 'misinformation', 'grievance redressal', 'user data'],
+    ),
+
+    LegalDocument(
+      id: 'tech_008',
+      titleEn: 'E-Government and Digital Services',
+      titleNp: 'ई-सरकार र डिजिटल सेवा',
+      category: 'Technology Law',
+      contentEn: 'The government promotes e-governance to improve service delivery through digital platforms. The Electronic Government Act provides the framework for online service delivery, digital signatures, and interoperability of government systems. Key initiatives include the online passport system, digital land records, e-tax filing, and the national identity card system. Citizens can access government services through service centers and mobile applications.',
+      contentNp: 'सरकारले डिजिटल प्लेटफर्ममार्फत सेवा प्रवाह सुधार गर्न ई-शासन प्रवर्धन गर्दछ। विद्युतीय सरकार ऐनले अनलाइन सेवा प्रवाह, डिजिटल हस्ताक्षर र सरकारी प्रणालीको अन्तरसञ्चालनको लागि ढाँचा प्रदान गर्दछ। मुख्य पहलहरूमा अनलाइन राहदानी प्रणाली, डिजिटल जग्गा अभिलेख, ई-कर फाइलिङ र राष्ट्रिय परिचयपत्र प्रणाली समावेश छन्।',
+      keywords: ['e-governance', 'digital service', 'e-sasn', 'online service', 'digital signature', 'national ID', 'e-tax', 'interoperability'],
+    ),
+
+    LegalDocument(
+      id: 'env_005',
+      titleEn: 'Climate Change and Adaptation',
+      titleNp: 'जलवायु परिवर्तन र अनुकूलन',
+      category: 'Environment Law',
+      contentEn: 'Nepal is highly vulnerable to climate change impacts including glacial melting, floods, landslides, and changing weather patterns. The Climate Change Policy provides a framework for adaptation, mitigation, and climate-resilient development. The government has established the Climate Change Management Division to coordinate climate action. Key initiatives include renewable energy promotion, community-based adaptation programs, and early warning systems. Nepal participates in international climate agreements and accesses climate finance.',
+      contentNp: 'नेपाल हिमाल पग्लने, बाढी, पहिरो र मौसम ढाँचामा परिवर्तन लगायत जलवायु परिवर्तनको प्रभावप्रति अत्यधिक संवेदनशील छ। जलवायु परिवर्तन नीतिले अनुकूलन, न्यूनीकरण र जलवायु-सहनशील विकासको लागि ढाँचा प्रदान गर्दछ। सरकारले जलवायु परिवर्तन समन्वय गर्न जलवायु परिवर्तन व्यवस्थापन महाशाखा स्थापना गरेको छ।',
+      keywords: ['climate change', 'jalabayu parivartan', 'adaptation', 'mitigation', 'glacial melting', 'community-based adaptation', 'climate finance', 'renewable energy'],
+    ),
+
+    LegalDocument(
+      id: 'env_006',
+      titleEn: 'Forest Conservation and Management',
+      titleNp: 'वन संरक्षण र व्यवस्थापन',
+      category: 'Environment Law',
+      contentEn: 'The Forest Act governs the conservation, management, and utilization of forests in Nepal. Community forestry is a successful model where local user groups manage forests for conservation and livelihood benefits. National parks, wildlife reserves, and conservation areas protect biodiversity. The act regulates timber harvesting, non-timber forest products collection, and forest clearance for development. Illegal logging and encroachment are punishable offenses. Nepal has achieved significant progress in increasing forest cover.',
+      contentNp: 'वन ऐनले नेपालमा वनको संरक्षण, व्यवस्थापन र उपयोगलाई नियमन गर्दछ। सामुदायिक वन एक सफल मोडेल हो जहाँ स्थानीय उपभोक्ता समूहहरूले संरक्षण र जीविकोपार्जनको लागि वन व्यवस्थापन गर्दछन्। राष्ट्रिय निकुञ्ज, वन्यजन्तु आरक्ष र संरक्षण क्षेत्रहरूले जैविक विविधता संरक्षण गर्दछन्।',
+      keywords: ['forest', 'ban', 'community forestry', 'samudayik ban', 'national park', 'wildlife', 'illegal logging', 'biodiversity'],
+    ),
+
+    LegalDocument(
+      id: 'env_007',
+      titleEn: 'Water Resources Management',
+      titleNp: 'जलस्रोत व्यवस्थापन',
+      category: 'Environment Law',
+      contentEn: 'The Water Resources Act regulates the use, conservation, and management of water resources in Nepal. Water is a public trust and the state holds it in trust for the people. The act prioritizes water use for drinking, irrigation, hydropower, and industrial purposes. Water rights are granted through licensing. The act addresses water pollution, watershed management, and integrated water resource planning. Nepal has abundant water resources but faces challenges in equitable distribution and climate resilience.',
+      contentNp: 'जलस्रोत ऐनले नेपालमा जलस्रोतको प्रयोग, संरक्षण र व्यवस्थापनलाई नियमन गर्दछ। पानी सार्वजनिक विश्वास हो र राज्यले यसलाई जनताको विश्वासमा राख्दछ। ऐनले खानेपानी, सिँचाइ, जलविद्युत र औद्योगिक प्रयोजनको लागि पानी प्रयोगलाई प्राथमिकता दिन्छ। जलस्रोत अधिकार इजाजतपत्रमार्फत प्रदान गरिन्छ।',
+      keywords: ['water resources', 'jalsrot', 'hydropower', 'jalabidyut', 'water rights', 'watershed management', 'water pollution', 'water license'],
+    ),
+
+    LegalDocument(
+      id: 'env_008',
+      titleEn: 'Environmental Impact Assessment',
+      titleNp: 'वातावरणीय प्रभाव मूल्याङ्कन',
+      category: 'Environment Law',
+      contentEn: 'Environmental Impact Assessment (EIA) is required for development projects that may have significant environmental impacts. The EIA process includes scoping, baseline study, impact prediction, mitigation planning, and public consultation. The Ministry of Forests and Environment reviews EIA reports and grants environmental approval. Initial Environmental Examination (IEE) is required for smaller projects. Projects must implement mitigation measures and monitoring plans. Public participation is an integral part of the EIA process.',
+      contentNp: 'वातावरणीय प्रभाव मूल्याङ्कन महत्त्वपूर्ण वातावरणीय प्रभाव पार्न सक्ने विकास परियोजनाको लागि आवश्यक हुन्छ। वातावरणीय प्रभाव मूल्याङ्कन प्रक्रियामा परिदृश्य निर्धारण, आधारभूत अध्ययन, प्रभाव पूर्वानुमान, न्यूनीकरण योजना र सार्वजनिक परामर्श समावेश हुन्छ। वन तथा वातावरण मन्त्रालयले वातावरणीय प्रभाव मूल्याङ्कन प्रतिवेदन समीक्षा गर्दछ र वातावरणीय स्वीकृति प्रदान गर्दछ।',
+      keywords: ['EIA', 'vatavarniya prabhab mulyankan', 'environmental impact', 'mitigation', 'IEE', 'public consultation', 'environmental approval', 'monitoring'],
+    ),
+
+    LegalDocument(
+      id: 'edu_005',
+      titleEn: 'University Governance and Regulation',
+      titleNp: 'विश्वविद्यालय प्रशासन र नियमन',
+      category: 'Education Law',
+      contentEn: 'Universities in Nepal are established by federal or provincial acts and are governed by a Senate, Executive Council, and Academic Council. The University Grants Commission coordinates and allocates funding to universities and promotes quality assurance. Each university has autonomy in academic affairs, curriculum design, examination, and research. University laws regulate the appointment of Vice-Chancellors, faculty recruitment, student admissions, and degree conferral. Tribhuvan University, Kathmandu University, and Purbanchal University are major public universities.',
+      contentNp: 'नेपालका विश्वविद्यालयहरू संघीय वा प्रदेश ऐनद्वारा स्थापित हुन्छन् र सिनेट, कार्य परिषद र शैक्षिक परिषदद्वारा सञ्चालित हुन्छन्। विश्वविद्यालय अनुदान आयोगले विश्वविद्यालयहरूलाई समन्वय र कोष विनियोजन गर्दछ र गुणस्तर आश्वासन प्रवर्धन गर्दछ। प्रत्येक विश्वविद्यालयलाई शैक्षिक मामिला, पाठ्यक्रम डिजाइन, परीक्षा र अनुसन्धानमा स्वायत्तता हुन्छ।',
+      keywords: ['university', 'bishwabidyala', 'UGC', 'university grant', 'vice-chancellor', 'academic council', 'university autonomy', 'quality assurance'],
+    ),
+
+    LegalDocument(
+      id: 'edu_006',
+      titleEn: 'School Education and Management',
+      titleNp: 'विद्यालय शिक्षा र व्यवस्थापन',
+      category: 'Education Law',
+      contentEn: 'Basic and secondary education in Nepal is delivered through community (public) and institutional (private) schools. The Education Act establishes the curriculum framework, examination system, and school management structure. School management committees govern community schools with parent and teacher representation. The government provides scholarships for underprivileged students. School leaving examinations are conducted by the National Examination Board. Minimum standards for school infrastructure and teacher qualifications are prescribed.',
+      contentNp: 'नेपालमा आधारभूत र माध्यमिक शिक्षा सामुदायिक (सार्वजनिक) र संस्थागत (निजी) विद्यालयमार्फत प्रदान गरिन्छ। शिक्षा ऐनले पाठ्यक्रम ढाँचा, परीक्षा प्रणाली र विद्यालय व्यवस्थापन संरचना स्थापित गर्दछ। विद्यालय व्यवस्थापन समितिहरूले अभिभावक र शिक्षक प्रतिनिधित्वसहित सामुदायिक विद्यालयहरूको व्यवस्थापन गर्दछन्।',
+      keywords: ['school education', 'vidyalaya shiksha', 'community school', 'samudayik vidyalaya', 'school management', 'SLC', 'National Examination Board', 'scholarship'],
+    ),
+
+    LegalDocument(
+      id: 'edu_007',
+      titleEn: 'Technical and Vocational Education',
+      titleNp: 'प्राविधिक तथा व्यावसायिक शिक्षा',
+      category: 'Education Law',
+      contentEn: 'The Technical and Vocational Education and Training (TVET) system in Nepal provides skills training for employment. The Council for Technical Education and Vocational Training (CTEVT) regulates TVET institutions and curricula. Programs include diploma, certificate, and short-term skill training in fields like engineering, health sciences, agriculture, IT, and hospitality. Apprenticeship programs combine on-the-job training with classroom instruction. Government provides scholarships for TVET students from disadvantaged backgrounds.',
+      contentNp: 'नेपालको प्राविधिक तथा व्यावसायिक शिक्षा तथा तालिम प्रणालीले रोजगारको लागि सीप तालिम प्रदान गर्दछ। प्राविधिक शिक्षा तथा व्यावसायिक तालिम परिषद्ले प्राविधिक तथा व्यावसायिक शिक्षा संस्था र पाठ्यक्रम नियमन गर्दछ। कार्यक्रमहरूमा ईन्जिनियरिङ, स्वास्थ्य विज्ञान, कृषि, सूचना प्रविधि र आतिथ्य जस्ता क्षेत्रमा डिप्लोमा, प्रमाणपत्र र अल्पकालीन सीप तालिम समावेश छन्।',
+      keywords: ['TVET', 'CTEVT', 'technical education', 'prabidhik shiksha', 'vocational training', 'byawasayik talim', 'apprenticeship', 'skill training'],
+    ),
+
+    LegalDocument(
+      id: 'edu_008',
+      titleEn: 'Education Quality and Accreditation',
+      titleNp: 'शिक्षा गुणस्तर र मान्यता',
+      category: 'Education Law',
+      contentEn: 'The Quality Assurance and Accreditation Council assesses and accredits higher education institutions based on standards of teaching, research, infrastructure, and governance. Accreditation is voluntary but incentivized through government funding and student preference. The council conducts institutional and program-level assessments. Institutions must meet minimum criteria for faculty qualifications, library resources, laboratory facilities, and student support services. Accreditation status is publicly available.',
+      contentNp: 'गुणस्तर आश्वासन तथा मान्यता परिषद्ले शिक्षण, अनुसन्धान, पूर्वाधार र प्रशासनको मापदण्डको आधारमा उच्च शिक्षा संस्थाहरूको मूल्याङ्कन र मान्यता प्रदान गर्दछ। मान्यता स्वैच्छिक छ तर सरकारी कोष र विद्यार्थी प्राथमिकतामार्फत प्रोत्साहित गरिन्छ। परिषद्ले संस्थागत र कार्यक्रम-स्तरीय मूल्याङ्कन गर्दछ।',
+      keywords: ['quality assurance', 'accreditation', 'gunastar aashwasan', 'manyata', 'QAAC', 'higher education', 'institutional assessment', 'program accreditation'],
+    ),
+
+    LegalDocument(
+      id: 'corp_008',
+      titleEn: 'Securities and Stock Exchange Regulation',
+      titleNp: 'धितोपत्र र शेयर बजार नियमन',
+      category: 'Corporate Law',
+      contentEn: 'The Securities Board of Nepal regulates the securities market including the Nepal Stock Exchange. The board oversees public offerings, listing requirements, trading rules, and investor protection. Companies seeking to raise capital through public offerings must register a prospectus with the board. Insider trading, market manipulation, and fraud are prohibited. Listed companies must comply with disclosure requirements, corporate governance standards, and periodic financial reporting.',
+      contentNp: 'नेपाल धितोपत्र बोर्डले नेपाल स्टक एक्सचेन्ज लगायत धितोपत्र बजारलाई नियमन गर्दछ। बोर्डले सार्वजनिक निर्गमन, सूचीकरण आवश्यकता, व्यापार नियम र लगानीकर्ता संरक्षणको पर्यवेक्षण गर्दछ। सार्वजनिक निर्गमनमार्फत पुँजी परिचालन गर्ने कम्पनीहरूले बोर्डमा विवरणपत्र दर्ता गर्नुपर्दछ।',
+      keywords: ['securities', 'stock exchange', 'dhitopatar', 'share bajar', 'SEBON', 'public offering', 'insider trading', 'investor protection'],
+    ),
+
+    LegalDocument(
+      id: 'corp_009',
+      titleEn: 'Corporate Taxation and Compliance',
+      titleNp: 'कर्पोरेट कर र अनुपालन',
+      category: 'Corporate Law',
+      contentEn: 'Companies in Nepal are subject to corporate income tax, value-added tax, and other applicable taxes. The Income Tax Act governs corporate taxation including tax rates, deductions, and filing requirements. Tax returns must be filed annually with the Inland Revenue Department. Transfer pricing rules apply to related-party transactions. Tax incentives are available for specific sectors including hydropower, tourism, and IT. Tax evasion is a criminal offense with penalties including fines and imprisonment.',
+      contentNp: 'नेपालका कम्पनीहरू कर्पोरेट आयकर, मूल्य अभिवृद्धि कर र अन्य लागू हुने करको अधीनमा छन्। आयकर ऐनले कर दर, कटौती र फाइलिङ आवश्यकता लगायत कर्पोरेट करलाई नियमन गर्दछ। आन्तरिक राजस्व विभागमा वार्षिक रूपमा कर विवरण दायर गर्नुपर्दछ। सम्बन्धित पक्ष कारोबारमा स्थानान्तरण मूल्य नियम लागू हुन्छ।',
+      keywords: ['corporate tax', 'korporate kar', 'income tax', 'ayakar', 'VAT', 'mulya abhibriddhi kar', 'Inland Revenue', 'tax compliance'],
+    ),
+
+    LegalDocument(
+      id: 'corp_010',
+      titleEn: 'Mergers, Acquisitions and Restructuring',
+      titleNp: 'मर्जर, अधिग्रहण र पुनर्संरचना',
+      category: 'Corporate Law',
+      contentEn: 'Mergers and acquisitions are governed by the Company Act and approved by the Office of the Company Registrar. Mergers combine two or more companies into one, while acquisitions involve one company taking control of another. Shareholders must approve mergers through special resolutions. The Competition Act prevents anti-competitive mergers that create monopolies. Corporate restructuring includes demergers, spin-offs, and debt restructuring. Creditors rights are protected during restructuring.',
+      contentNp: 'मर्जर र अधिग्रहण कम्पनी ऐनद्वारा नियमन गरिन्छ र कम्पनी रजिस्ट्रारको कार्यालयद्वारा स्वीकृत गरिन्छ। मर्जरले दुई वा बढी कम्पनीहरूलाई एउटामा मिलाउँदछ, जबकि अधिग्रहणमा एउटा कम्पनीले अर्कोको नियन्त्रण लिने कार्य समावेश हुन्छ। सेयरधनीहरूले विशेष प्रस्तावमार्फत मर्जर स्वीकृत गर्नुपर्दछ।',
+      keywords: ['merger', 'acquisition', 'adhigrahan', 'company merger', 'corporate restructuring', 'punsarranchna', 'demerger', 'competition act'],
+    ),
+LegalDocument(
+      id: 'crim_008',
+      titleEn: 'Hate Speech and Incitement Offenses',
+      titleNp: 'घृणात्मक अभिव्यक्ति र उक्साहट अपराध',
+      category: 'Criminal Law',
+      contentEn: 'Hate speech involves the incitement of hatred, discrimination, or violence against individuals or groups based on race, religion, ethnicity, gender, or other characteristics. Nepalese law prohibits hate speech and incitement to violence. The Criminal Code penalizes acts that promote enmity between different groups. Social media platforms have been directed to remove hate speech content. Victims of hate speech may file complaints with the police and seek legal remedies.',
+      contentNp: 'घृणात्मक अभिव्यक्तिमा जाति, धर्म, जातजाति, लिङ्ग वा अन्य विशेषताको आधारमा व्यक्ति वा समूहविरुद्ध घृणा, भेदभाव वा हिंसा भड्काउने कार्य समावेश हुन्छ। नेपाली कानूनले घृणात्मक अभिव्यक्ति र हिंसाको उक्साहटलाई निषेध गर्दछ। फौजदारी संहिताले विभिन्न समूहबीच शत्रुता बढाउने कार्यलाई दण्डित गर्दछ।',
+      keywords: ['hate speech', 'ghrina', 'incitement', 'uksahat', 'discrimination', 'bhedbhav', 'communal harmony', 'social media hate'],
+    ),
+
+    LegalDocument(
+      id: 'crim_009',
+      titleEn: 'White Collar Crimes and Fraud',
+      titleNp: 'सेतो पोशाक अपराध र ठगी',
+      category: 'Criminal Law',
+      contentEn: 'White collar crimes include fraud, embezzlement, insider trading, tax evasion, and money laundering. These non-violent offenses are committed for financial gain by individuals, businesses, and government officials. Fraud involves intentional deception to secure unfair or unlawful gain. Money laundering is the process of concealing the origins of illegally obtained money. The Nepal Police Economic Crime Investigation Division investigates white collar crimes. Penalties include fines, asset forfeiture, and imprisonment.',
+      contentNp: 'सेतो पोशाक अपराधहरूमा ठगी, गबन, भित्री कारोबार, कर छली र मनी लान्ड्रिङ समावेश छन्। यी अहिंसात्मक अपराधहरू व्यक्ति, व्यवसाय र सरकारी अधिकारीहरूले आर्थिक लाभको लागि गर्दछन्। ठगीमा अनुचित वा गैरकानूनी लाभ प्राप्त गर्न जानीबुझी धोका दिने कार्य समावेश हुन्छ।',
+      keywords: ['white collar crime', 'fraud', 'thagi', 'money laundering', 'mani laundring', 'economic crime', 'tax evasion', 'asset forfeiture'],
+    ),
+
+    LegalDocument(
+      id: 'crim_010',
+      titleEn: 'Sexual Offenses and Protection',
+      titleNp: 'यौन अपराध र संरक्षण',
+      category: 'Criminal Law',
+      contentEn: 'Sexual offenses under Nepalese law include rape, sexual assault, sexual harassment, and trafficking for sexual exploitation. The Criminal Code defines rape as sexual intercourse without consent, with enhanced penalties for rape of minors. Sexual harassment in the workplace is prohibited. Victims have the right to confidential medical examination, legal representation, and counseling. Special provisions for victim protection include in-camera proceedings and prohibition of victim identity disclosure.',
+      contentNp: 'नेपाली कानून अन्तर्गत यौन अपराधहरूमा बलात्कार, यौन आक्रमण, यौन उत्पीडन र यौन शोषणको लागि बेचबिखन समावेश छन्। फौजदारी संहिताले बलात्कारलाई सहमतिविना यौन सम्पर्कको रूपमा परिभाषित गर्दछ, नाबालिगको बलात्कारको लागि कडा सजायको व्यवस्था गरेको छ। कार्यस्थलमा यौन उत्पीडन निषेधित छ।',
+      keywords: ['sexual offense', 'rape', 'balkar', 'youn apradh', 'sexual harassment', 'youn utpidan', 'victim protection', 'in-camera'],
+    ),
+
+    LegalDocument(
+      id: 'civ_proc_001',
+      titleEn: 'Civil Court Jurisdiction and Hierarchy',
+      titleNp: 'देवानी अदालतको अधिकारक्षेत्र र तहगत संरचना',
+      category: 'Civil Law',
+      contentEn: 'Nepalese civil courts are structured in a hierarchy: District Courts, High Courts, and the Supreme Court. District Courts have original jurisdiction over most civil matters within their territorial limits. High Courts hear appeals from District Courts and have limited original jurisdiction. The Supreme Court is the highest appellate court with the power of judicial review. Specialized courts include the Administrative Court, Revenue Tribunal, and Debt Recovery Tribunal.',
+      contentNp: 'नेपालका देवानी अदालतहरू तहगत रूपमा संरचित छन्: जिल्ला अदालत, उच्च अदालत र सर्वोच्च अदालत। जिल्ला अदालतहरूलाई आफ्नो क्षेत्रीय सीमाभित्र अधिकांश देवानी मामिलामा मौलिक अधिकारक्षेत्र हुन्छ। उच्च अदालतहरूले जिल्ला अदालतको फैसलाविरुद्ध पुनरावेदन सुन्दछन् र सीमित मौलिक अधिकारक्षेत्र हुन्छ।',
+      keywords: ['court hierarchy', 'adalat', 'District Court', 'jilla adalat', 'High Court', 'uchha adalat', 'Supreme Court', 'sarbochha adalat'],
+    ),
+
+    LegalDocument(
+      id: 'civ_proc_002',
+      titleEn: 'Limitation and Evidence Rules',
+      titleNp: 'सीमा अवधि र प्रमाण नियम',
+      category: 'Civil Law',
+      contentEn: 'Evidence and limitation rules are crucial in civil litigation. The Evidence Act governs the admissibility, relevance, and weight of evidence in court. Primary evidence includes original documents and direct witness testimony. Secondary evidence permits copies and circumstantial evidence when primary evidence is unavailable. The burden of proof in civil cases rests on the plaintiff. Limitation periods vary by claim type and run from the date the cause of action accrues.',
+      contentNp: 'देवानी मुद्दामा प्रमाण र सीमा अवधि नियमहरू महत्त्वपूर्ण हुन्छन्। प्रमाण ऐनले अदालतमा प्रमाणको स्वीकार्यता, सान्दर्भिकता र महत्त्वलाई नियमन गर्दछ। प्राथमिक प्रमाणमा मूल कागजात र प्रत्यक्ष साक्षी बयान समावेश हुन्छ। माध्यमिक प्रमाणले प्राथमिक प्रमाण उपलब्ध नभएको अवस्थामा प्रतिलिपि र परिस्थितिजन्य प्रमाणलाई अनुमति दिन्छ।',
+      keywords: ['evidence', 'praman', 'burden of proof', 'praman ko bhar', 'admissibility', 'swikaryata', 'primary evidence', 'secondary evidence'],
     ),
   ];
 }

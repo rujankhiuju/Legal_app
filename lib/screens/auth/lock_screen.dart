@@ -22,7 +22,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
   @override
   void initState() {
     super.initState();
-    _tryBiometric();
+    _checkAndAutoBio();
   }
 
   @override
@@ -32,7 +32,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
     super.dispose();
   }
 
-  Future<void> _tryBiometric() async {
+  Future<void> _checkAndAutoBio() async {
     final service = BiometricService();
     final available = await service.isAvailable();
     if (!mounted) return;
@@ -237,7 +237,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                 if (_biometricAvailable) ...[
                   const SizedBox(height: 16),
                   IconButton(
-                    onPressed: _loading ? null : _tryBiometric,
+                    onPressed: _loading ? null : _checkAndAutoBio,
                     icon: const Icon(Icons.fingerprint, size: 36),
                     style: IconButton.styleFrom(
                       backgroundColor: isDark ? AppColors.darkCard : Colors.white.withOpacity(0.1),
