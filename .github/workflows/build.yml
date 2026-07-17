@@ -39,14 +39,20 @@ jobs:
           name: release-apk
           path: build/app/outputs/flutter-apk/*.apk
 
+      - name: Get version
+        id: version
+        run: echo "version=v$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: Legal Assistant v1.0.0
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Legal Assistant ${{ steps.version.outputs.version }}
           body: |
-            Initial release of Legal Assistant app.
+            Automated release from main branch.
+          generate_release_notes: true
+          files: build/app/outputs/flutter-apk/*.apk
 
             ## Features
             - Rule Book - Browse Nepali legal documents
