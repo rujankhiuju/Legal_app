@@ -4,6 +4,26 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// ── Read version from local.properties ─────────────────────────────────────
+// These are set by Flutter's gradle plugin locally, or by the CI workflow.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
 // ── Signing config ─────────────────────────────────────────────────────────
 // Reads credentials from android/key.properties (do NOT commit this file).
 // On CI the file is created by the GitHub Actions workflow from secrets.
@@ -14,12 +34,12 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.yourname.legalassistant"         // ← CHANGE to your package name
+    namespace "com.rujankhiuju.legalassistant"
     compileSdk 34
 
     compileOptions {
         coreLibraryDesugaringEnabled true
-        sourceCompatibility JavaVersion.VERSION_17  // Java 17 for CI
+        sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 
@@ -28,7 +48,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.yourname.legalassistant"  // ← CHANGE to your package name
+        applicationId "com.rujankhiuju.legalassistant"
         minSdk 24
         targetSdk 34
         versionCode flutterVersionCode.toInteger()

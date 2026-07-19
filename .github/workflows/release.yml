@@ -57,7 +57,14 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
-      # 7 ── Create key.properties for signing
+      # 7 ── Create local.properties for version info
+      - name: Create local.properties
+        run: |
+          echo "flutter.versionCode=${{ github.run_number }}" >> android/local.properties
+          echo "flutter.versionName=${{ github.ref_name }}" >> android/local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+
+      # 8 ── Create key.properties for signing
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOF
@@ -67,16 +74,16 @@ jobs:
           storeFile=../keystore.jks
           EOF
 
-      # 8 ── Build split-per-abi APKs (arm64-v8a, armeabi-v7a, x86_64)
+      # 9 ── Build split-per-abi APKs (arm64-v8a, armeabi-v7a, x86_64)
       #     These are smaller and are preferred for Play Store distribution.
       - name: Build Split APKs
         run: flutter build apk --release --split-per-abi
 
-      # 9 ── Build universal (fat) APK that works on all architectures
+      # 10 ── Build universal (fat) APK that works on all architectures
       - name: Build Fat APK
         run: flutter build apk --release
 
-      # 10 ── Generate release notes from commits since the last tag
+      # 11 ── Generate release notes from commits since the last tag
       - name: Generate Release Notes
         id: changelog
         run: |
@@ -93,7 +100,7 @@ jobs:
           NOTES="${NOTES//$'\r'/'%0D'}"
           echo "notes=$NOTES" >> "$GITHUB_OUTPUT"
 
-      # 11 ── Create GitHub Release and upload assets
+      # 12 ── Create GitHub Release and upload assets
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
