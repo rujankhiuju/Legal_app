@@ -37,12 +37,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3 ── Set up Flutter stable
+      # 3 ── Set up Flutter stable (latest)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: latest
 
       # 4 ── Install dependencies
       - name: Install Dependencies
