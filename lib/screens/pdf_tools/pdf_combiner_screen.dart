@@ -1,15 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart' hide PdfDocument;
-import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart' as spdf;
 import '../../core/theme/app_colors.dart';
-import '../../shared/widgets/pill_button.dart';
-import '../../providers/pdf_provider.dart';
+import '../../shared/widgets/pill_button.dart' hide AnimatedBuilder;
 
 class PdfCombinerScreen extends ConsumerStatefulWidget {
   const PdfCombinerScreen({super.key});
@@ -71,102 +68,55 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
   }
 
   Future<void> _combine() async {
-    if (_files.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select at least 2 PDFs to combine'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
     setState(() => _loading = true);
-
     try {
-      final pdf = pw.Document();
-      int totalPages = 0;
+      final spdf.PdfDocument outputDoc = spdf.PdfDocument();
 
       for (final platformFile in _files) {
-        final file = File(platformFile.path!);
-        final bytes = await file.readAsBytes();
-        final doc = await pw.Document.load(bytes);
+        final bytes = await File(platformFile.path!).readAsBytes();
+        final spdf.PdfDocument sourceDoc = spdf.PdfDocument(inputBytes: bytes);
 
-        for (int i = 0; i < doc.pages.length; i++) {
-          final page = doc.pages[i];
-          pdf.addPage(
-            pw.Page(
-              pageFormat: page.format ?? PdfPageFormat.a4,
-              build: (_) {
-                try {
-                  final img = pw.MemoryImage(
-                    await page.toBytes(format: PdfPageFormat.a4),
-                  );
-                  return pw.Center(child: pw.Image(img));
-                } catch (_) {
-                  return pw.Center(
-                    child: pw.Text('Page ${i + 1}', style: pw.TextStyle(fontSize: 12)),
-                  );
-                }
-              },
-            ),
+        for (int i = 0; i < sourceDoc.pages.count; i++) {
+          final spdf.PdfPage sourcePage = sourceDoc.pages[i];
+          final spdf.PdfPage newPage = outputDoc.pages.add();
+
+          newPage.graphics.drawPdfTemplate(
+            sourcePage.createTemplate(),
+            Offset.zero,
+            Size(sourcePage.size.width, sourcePage.size.height),
           );
-          totalPages++;
         }
+        sourceDoc.dispose();
       }
 
-      final dir = await getApplicationDocumentsDirectory();
+      final List<int> outputBytes = await outputDoc.save();
+      outputDoc.dispose();
+
+      final directory = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${dir.path}/Combined_$timestamp.pdf';
+      final outputPath = '${directory.path}/Combined_$timestamp.pdf';
       final outputFile = File(outputPath);
-      await outputFile.writeAsBytes(await pdf.save());
+      await outputFile.writeAsBytes(outputBytes);
 
-      final totalBytes = await outputFile.length();
-
-      final pdfDoc = PdfDocument(
-        id: timestamp.toString(),
-        title: 'Combined PDF',
-        filePath: outputPath,
-        pageCount: totalPages,
-        createdAt: DateTime.now(),
+      await Share.shareXFiles(
+        [XFile(outputPath)],
+        text: 'Combined PDF',
       );
-      await ref.read(pdfActionsProvider).savePdf(pdfDoc);
 
       if (mounted) {
-        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('PDF Combined Successfully!'),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Share',
-              textColor: const Color(0xFFD4AF37),
-              onPressed: () {
-                SharePlus.instance.share(
-                 ShareParams(
-                    files: [XFile(outputPath)],
-                    text: 'Combined PDF',
-                  ),
-                );
-              },
-            ),
-          ),
+          SnackBar(content: Text('PDFs combined successfully!')),
         );
         setState(() => _files.clear());
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error combining PDFs: $e'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text('Error combining PDFs: $e')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
