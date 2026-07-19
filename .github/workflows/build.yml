@@ -38,27 +38,3 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/*.apk
-
-      - name: Get version
-        id: version
-        run: echo "version=v$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | cut -d'+' -f1)" >> "$GITHUB_OUTPUT"
-
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Legal Assistant ${{ steps.version.outputs.version }}
-          body: |
-            Automated release from main branch.
-
-            ## Features
-            - Rule Book - Browse Nepali legal documents
-            - Case Notes - Manage case notes with Hive persistence
-            - Calendar - Track court events with table_calendar
-            - Reminders - Set reminders with notifications
-            - Scanner - Scan, OCR, and manage documents
-            - Dark/Light theme support
-            - Nepali language localization
-          files: build/app/outputs/flutter-apk/*.apk
-          make_latest: true
