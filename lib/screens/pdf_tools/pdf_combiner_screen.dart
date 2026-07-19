@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart' as spdf;
+import 'package:pdf/pdf.dart' hide PdfDocument;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/pill_button.dart' hide AnimatedBuilder;
 
@@ -70,33 +72,34 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
   Future<void> _combine() async {
     setState(() => _loading = true);
     try {
-      final spdf.PdfDocument outputDoc = spdf.PdfDocument();
+      final pdf = pw.Document();
+      int totalPages = 0;
 
       for (final platformFile in _files) {
         final bytes = await File(platformFile.path!).readAsBytes();
-        final spdf.PdfDocument sourceDoc = spdf.PdfDocument(inputBytes: bytes);
 
-        for (int i = 0; i < sourceDoc.pages.count; i++) {
-          final spdf.PdfPage sourcePage = sourceDoc.pages[i];
-          final spdf.PdfPage newPage = outputDoc.pages.add();
-
-          newPage.graphics.drawPdfTemplate(
-            sourcePage.createTemplate(),
-            Offset.zero,
-            Size(sourcePage.size.width, sourcePage.size.height),
+        await for (final raster in Printing.raster(bytes)) {
+          final pngBytes = await raster.toPng();
+          final pageFormat = PdfPageFormat(
+            raster.width * 72.0 / 150.0,
+            raster.height * 72.0 / 150.0,
           );
+          pdf.addPage(
+            pw.Page(
+              pageFormat: pageFormat,
+              margin: const pw.EdgeInsets.all(0),
+              build: (_) => pw.Image(pw.MemoryImage(pngBytes)),
+            ),
+          );
+          totalPages++;
         }
-        sourceDoc.dispose();
       }
 
-      final List<int> outputBytes = await outputDoc.save();
-      outputDoc.dispose();
-
-      final directory = await getApplicationDocumentsDirectory();
+      final dir = await getApplicationDocumentsDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${directory.path}/Combined_$timestamp.pdf';
+      final outputPath = '${dir.path}/Combined_$timestamp.pdf';
       final outputFile = File(outputPath);
-      await outputFile.writeAsBytes(outputBytes);
+      await outputFile.writeAsBytes(await pdf.save());
 
       await Share.shareXFiles(
         [XFile(outputPath)],
@@ -105,7 +108,7 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDFs combined successfully!')),
+          SnackBar(content: Text('PDFs combined successfully! ($totalPages pages)')),
         );
         setState(() => _files.clear());
       }
