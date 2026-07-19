@@ -196,6 +196,17 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
+class _NavItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
+}
+
 const _items = [
   _NavItem(
     icon: Icons.home_outlined,

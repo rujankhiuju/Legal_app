@@ -8,6 +8,7 @@ import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/staggered_animation.dart';
 import '../../features/rule_book/model/legal_document.dart';
 import '../../features/rule_book/providers/rule_book_provider.dart';
+import '../../providers/law_provider.dart';
 
 const double _tabletBreakpoint = 600;
 
