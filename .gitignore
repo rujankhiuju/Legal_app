@@ -36,3 +36,4 @@ android/key.properties
 *.keystore
 keystore.jks
 git_stub.py
+.DS_Store
