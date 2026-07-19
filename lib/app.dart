@@ -4,7 +4,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_provider.dart';
 import 'core/localization/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'providers/auth_provider.dart';
@@ -78,7 +77,6 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
     final router = ref.watch(appRouterProvider);
 
@@ -88,9 +86,8 @@ class _AppState extends ConsumerState<App> with WidgetsBindingObserver {
       child: MaterialApp.router(
         title: 'Nepali Legal Assistant',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: themeMode,
+        theme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
         scrollBehavior: AppScrollBehavior(),
         locale: locale,
         supportedLocales: AppLocalizations.supportedLocales,

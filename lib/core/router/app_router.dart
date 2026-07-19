@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../features/home/home_page.dart';
-import '../../features/rule_book/rule_book_page.dart';
+import '../../screens/home/home_screen.dart';
+import '../../screens/rule_book/rule_book_screen.dart';
 import '../../features/rule_book/rule_book_detail_page.dart';
-import '../../features/notes/notes_page.dart';
+import '../../screens/notes/notes_screen.dart';
 import '../../features/notes/note_editor_page.dart';
 import '../../features/notes/model/case_note.dart' show CaseNote;
-import '../../features/calendar/calendar_page.dart';
+import '../../screens/calendar/calendar_screen.dart';
 import '../../features/calendar/add_hearing_page.dart';
 import '../../features/calendar/model/court_event.dart' show CourtEvent;
 import '../../screens/calendar/hearing_detail_screen.dart' show HearingDetailScreen;
 import '../../features/more/more_page.dart';
 import '../../features/more/settings_page.dart';
-import '../../features/reminders/screen/reminders_page.dart';
+import '../../screens/reminders/reminders_screen.dart';
 import '../../features/scanner/screen/scanner_screen.dart';
 import '../../features/scanner/screen/edit_scan_screen.dart';
 import '../../features/scanner/screen/pdf_generate_screen.dart';
@@ -69,12 +69,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
         branches: [
-          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.home}', name: RouteNames.home, builder: (context, state) => const HomePage())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.ruleBook}', name: RouteNames.ruleBook, builder: (context, state) => const RuleBookPage(), routes: [GoRoute(path: ':docId', name: '${RouteNames.ruleBook}Detail', parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) { final docId = state.pathParameters['docId']!; return RuleBookDetailPage(docId: docId); })]),
+          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.home}', name: RouteNames.home, builder: (context, state) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.ruleBook}', name: RouteNames.ruleBook, builder: (context, state) => const RuleBookScreen(), routes: [GoRoute(path: ':docId', name: '${RouteNames.ruleBook}Detail', parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) { final docId = state.pathParameters['docId']!; return RuleBookDetailPage(docId: docId); })]),
           ]),
-          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.notes}', name: RouteNames.notes, builder: (context, state) => const NotesPage(), routes: [GoRoute(path: 'editor', name: RouteNames.notesEditor, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) { final existing = state.extra as CaseNote?; return NoteEditorPage(existingNote: existing); })]),
+          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.notes}', name: RouteNames.notes, builder: (context, state) => const NotesScreen(), routes: [GoRoute(path: 'editor', name: RouteNames.notesEditor, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) { final existing = state.extra as CaseNote?; return NoteEditorPage(existingNote: existing); })]),
           ]),
-          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.calendar}', name: RouteNames.calendar, builder: (context, state) => const CalendarPage(), routes: [GoRoute(path: 'add', name: RouteNames.addHearing, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const AddHearingPage()),
+          StatefulShellBranch(routes: [GoRoute(path: '/${RouteNames.calendar}', name: RouteNames.calendar, builder: (context, state) => const CalendarScreen(), routes: [GoRoute(path: 'add', name: RouteNames.addHearing, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const AddHearingPage()),
 GoRoute(path: 'hearing-detail', name: RouteNames.hearingDetail, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) {
   final event = state.extra as CourtEvent;
   return HearingDetailScreen(event: event);
@@ -87,7 +87,7 @@ GoRoute(path: 'hearing-detail', name: RouteNames.hearingDetail, parentNavigatorK
         ],
       ),
       GoRoute(path: '/${RouteNames.settings}', name: RouteNames.settings, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const SettingsPage()),
-      GoRoute(path: '/${RouteNames.reminders}', name: RouteNames.reminders, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const RemindersPage()),
+      GoRoute(path: '/${RouteNames.reminders}', name: RouteNames.reminders, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const RemindersScreen()),
       GoRoute(path: '/${RouteNames.scanner}', name: RouteNames.scanner, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const ScannerScreen()),
       GoRoute(path: '/${RouteNames.editScan}', name: RouteNames.editScan, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) { final path = state.extra as String; return EditScanScreen(imagePath: path); }),
       GoRoute(path: '/${RouteNames.pdfGenerate}', name: RouteNames.pdfGenerate, parentNavigatorKey: NotificationService.navigatorKey, builder: (context, state) => const PdfGenerateScreen()),
