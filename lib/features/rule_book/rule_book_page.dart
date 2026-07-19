@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/staggered_animation.dart';
 import '../../shared/widgets/polished_card.dart';
+import '../../providers/law_provider.dart';
 import 'model/legal_document.dart';
 import 'providers/rule_book_provider.dart';
 
@@ -16,10 +18,13 @@ class RuleBookPage extends ConsumerStatefulWidget {
 
 class _RuleBookPageState extends ConsumerState<RuleBookPage> {
   final _searchController = TextEditingController();
+  Timer? _debounce;
+  bool _offlineSnackbarShown = false;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -27,51 +32,65 @@ class _RuleBookPageState extends ConsumerState<RuleBookPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final lawState = ref.watch(lawStateProvider);
+
+    if (!_offlineSnackbarShown &&
+        lawState.error != null &&
+        lawState.documents.isNotEmpty) {
+      _offlineSnackbarShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Using offline library'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSecondary,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rule Book'),
-        actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final offlineAsync = ref.watch(isOfflineProvider);
-              return offlineAsync.when(
-                data: (offline) => offline
-                    ? Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.cloud_off_rounded, size: 14, color: Colors.orange),
-                              SizedBox(width: 4),
-                              Text('Offline', style: TextStyle(fontSize: 11, color: Colors.orange)),
-                            ],
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              );
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
+          SizedBox(
+            height: 3,
+            child: AnimatedOpacity(
+              opacity: lawState.isLoading ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                ),
+              ),
+            ),
+          ),
           _SearchBar(
             controller: _searchController,
-            onChanged: (v) =>
-                ref.read(searchQueryProvider.notifier).state = v,
+            onChanged: (v) {
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 300), () {
+                ref.read(lawStateProvider.notifier).setSearch(v);
+              });
+            },
             onClear: () {
+              _debounce?.cancel();
               _searchController.clear();
-              ref.read(searchQueryProvider.notifier).state = '';
+              ref.read(lawStateProvider.notifier).setSearch('');
+            },
+            isDark: isDark,
+          ),
+          _CategoryChips(
+            categories: lawState.categories,
+            selected: lawState.selectedCategory,
+            onSelected: (cat) {
+              ref.read(lawStateProvider.notifier).setCategory(cat);
             },
             isDark: isDark,
           ),
@@ -100,7 +119,7 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       child: TextField(
         controller: controller,
@@ -135,6 +154,71 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
+class _CategoryChips extends StatelessWidget {
+  final List<String> categories;
+  final String? selected;
+  final ValueChanged<String?> onSelected;
+  final bool isDark;
+
+  const _CategoryChips({
+    required this.categories,
+    required this.selected,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (categories.isEmpty) return const SizedBox.shrink();
+    return Container(
+      height: 48,
+      color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: categories.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final isAll = index == 0;
+          final label = isAll ? 'All' : categories[index - 1];
+          final isSelected = isAll ? selected == null : selected == label;
+          return GestureDetector(
+            onTap: () => onSelected(isAll ? null : label),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF0A192F)
+                    : (isDark ? AppColors.darkCard : AppColors.lightCard),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected
+                      ? const Color(0xFFD4AF37)
+                      : Colors.transparent,
+                  width: 1.5,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected
+                        ? const Color(0xFFD4AF37)
+                        : (isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _DocumentList extends ConsumerWidget {
   final bool isDark;
 
@@ -142,12 +226,12 @@ class _DocumentList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final docsAsync = ref.watch(legalDocsProvider);
-    final grouped = ref.watch(filteredDocsProvider);
-    final query = ref.watch(searchQueryProvider);
+    final lawState = ref.watch(lawStateProvider);
+    final query = lawState.searchQuery;
+    final filtered = lawState.filteredDocuments;
 
-    return docsAsync.when(
-      loading: () => Center(
+    if (lawState.isLoading && lawState.documents.isEmpty) {
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -163,8 +247,11 @@ class _DocumentList extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      error: (error, _) => Center(
+      );
+    }
+
+    if (lawState.error != null && lawState.documents.isEmpty) {
+      return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
@@ -185,7 +272,7 @@ class _DocumentList extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                error.toString(),
+                lawState.error.toString(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -194,7 +281,7 @@ class _DocumentList extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               GestureDetector(
-                onTap: () => ref.read(ruleBookActionsProvider).refresh(),
+                onTap: () => ref.read(lawStateProvider.notifier).refresh(),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                   decoration: BoxDecoration(
@@ -210,55 +297,103 @@ class _DocumentList extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-      data: (_) {
-        if (grouped.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.search_off_rounded,
-                  size: 64,
+      );
+    }
+
+    final Map<String, List<LegalDocument>> grouped = {};
+    for (final doc in filtered) {
+      grouped.putIfAbsent(doc.category, () => []).add(doc);
+    }
+
+    if (grouped.isEmpty && query.isNotEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.search_off_rounded,
+                size: 72,
+                color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "No laws found for '$query'",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
                   color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  query.isEmpty
-                      ? 'No documents available'
-                      : 'No results for "$query"',
-                  style: TextStyle(
-                    color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+              ),
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () {
+                  ref.read(lawStateProvider.notifier).setSearch('');
+                  context.findAncestorStateOfType<_RuleBookPageState>()
+                      ?._searchController.clear();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Clear Search',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () => ref.read(ruleBookActionsProvider).refresh(),
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              if (query.isEmpty) _RecentSection(isDark: isDark),
-              for (final entry in grouped.entries) ...[
-                _CategoryHeader(
-                  category: entry.key,
-                  count: entry.value.length,
-                  isDark: isDark,
-                ),
-                for (final doc in entry.value)
-                  StaggeredFadeSlide(
-                    index: entry.value.indexOf(doc),
-                    child: _DocumentCard(doc: doc, isDark: isDark),
-                  ),
-              ],
+              ),
             ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (grouped.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No documents available',
+              style: TextStyle(
+                color: isDark ? AppColors.darkSubtitle : AppColors.lightSubtitle,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => ref.read(lawStateProvider.notifier).refresh(),
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          if (query.isEmpty) _RecentSection(isDark: isDark),
+          for (final entry in grouped.entries) ...[
+            _CategoryHeader(
+              category: entry.key,
+              count: entry.value.length,
+              isDark: isDark,
+            ),
+            for (final doc in entry.value)
+              StaggeredFadeSlide(
+                index: entry.value.indexOf(doc),
+                child: _DocumentCard(doc: doc, isDark: isDark),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -435,6 +570,9 @@ class _DocumentCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lawState = ref.watch(lawStateProvider);
+    final isBookmarked = lawState.bookmarkIds.contains(doc.id);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       child: Hero(
@@ -493,7 +631,7 @@ class _DocumentCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                if (doc.isBookmarked)
+                if (isBookmarked)
                   Icon(
                     Icons.bookmark_rounded,
                     color: isDark ? AppColors.darkAccent : AppColors.lightSecondary,

@@ -142,6 +142,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void updateActivity() { state = state.copyWith(lastActivity: DateTime.now()); }
 
+  Future<void> setRequiresAuth(bool value) async {
+    final user = state.user;
+    if (user == null) return;
+    final updated = user.copyWith(requiresAuth: value);
+    await UserStorage.save(updated);
+    state = state.copyWith(user: updated);
+  }
+
   Future<void> updateProfile(String firstName, String lastName) async {
     final user = state.user;
     if (user == null) return;

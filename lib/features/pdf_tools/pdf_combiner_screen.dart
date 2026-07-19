@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
+import 'package:pdf/pdf.dart' hide PdfDocument;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
@@ -89,6 +89,7 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
 
     try {
       final pdf = pw.Document();
+      int totalPages = 0;
       for (final filePath in _selectedFiles) {
         final file = File(filePath);
         final bytes = await file.readAsBytes();
@@ -106,6 +107,7 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
               build: (_) => pw.Image(pw.MemoryImage(pngBytes)),
             ),
           );
+          totalPages++;
         }
       }
 
@@ -119,7 +121,7 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
         id: timestamp.toString(),
         title: 'Combined PDF',
         filePath: outputPath,
-        pageCount: pdf.pages.length,
+        pageCount: totalPages,
         createdAt: DateTime.now(),
       );
       await ref.read(pdfActionsProvider).savePdf(pdfDoc);
@@ -128,7 +130,7 @@ class _PdfCombinerScreenState extends ConsumerState<PdfCombinerScreen> {
         setState(() => _loading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Merged ${_selectedFiles.length} PDFs (${pdf.pages.length} pages)'),
+            content: Text('Merged ${_selectedFiles.length} PDFs ($totalPages pages)'),
             behavior: SnackBarBehavior.floating,
           ),
         );

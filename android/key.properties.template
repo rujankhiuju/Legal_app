@@ -1,0 +1,19 @@
+# =============================================================================
+# keystore signing configuration — TEMPLATE
+# =============================================================================
+# Copy this file to key.properties and fill in your values.
+# NEVER commit key.properties to git (it's in .gitignore).
+#
+# How to create a keystore (if you don't have one):
+#   keytool -genkey -v -keystore keystore.jks \
+#           -alias upload -keyalg RSA -keysize 2048 \
+#           -validity 10000 -storetype jks
+#
+# This prompts for passwords — use the SAME password for both
+# store and key, or remember both separately.
+# =============================================================================
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=../keystore.jks

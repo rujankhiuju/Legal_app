@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -250,7 +251,7 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                               ),
                               const SizedBox(height: 20),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
                                   color: isDark
@@ -259,16 +260,10 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    SizedBox(
-                                      height: 24,
-                                      child: Transform.scale(
-                                        scale: 0.85,
-                                        child: CupertinoSwitch(
-                                          value: _requiresAuth,
-                                          activeColor: const Color(0xFFD4AF37),
-                                          onChanged: (v) => setState(() => _requiresAuth = v),
-                                        ),
-                                      ),
+                                    CupertinoSwitch(
+                                      value: _requiresAuth,
+                                      activeColor: const Color(0xFFD4AF37),
+                                      onChanged: (v) => setState(() => _requiresAuth = v),
                                     ),
                                     const SizedBox(width: 10),
                                     Icon(
@@ -278,12 +273,25 @@ class _SetupAccountScreenState extends ConsumerState<SetupAccountScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
-                                      child: Text(
-                                        'Enable Security (PIN/Biometric)',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isDark ? AppColors.darkText : Colors.white70,
-                                        ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Enable Security Lock (PIN / Biometric)',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: isDark ? AppColors.darkText : Colors.white70,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Recommended if others may use this device',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: isDark ? AppColors.darkSubtitle : Colors.white54,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

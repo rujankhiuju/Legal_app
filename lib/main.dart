@@ -6,7 +6,7 @@ import 'features/rule_book/model/legal_document.dart';
 import 'features/notes/model/case_note.dart';
 import 'features/calendar/model/court_event.dart';
 import 'features/reminders/model/reminder.dart';
-import 'features/reminders/service/notification_service.dart';
+import 'core/services/notification_service.dart';
 import 'features/scanner/model/pdf_document.dart';
 import 'features/home/model/advocate_profile.dart';
 
@@ -20,9 +20,12 @@ void main() async {
   Hive.registerAdapter(PdfDocumentAdapter());
   Hive.registerAdapter(AdvocateProfileAdapter());
   await NotificationService.instance.initialize();
+
   runApp(
     const ProviderScope(
       child: App(),
     ),
   );
+
+  NotificationService.instance.retryPendingNavigation();
 }

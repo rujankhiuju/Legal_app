@@ -12,6 +12,7 @@ class LegalDocument {
   final List<String> keywords;
   final bool isBookmarked;
   final DateTime? lastViewed;
+  final String? sectionNumber;
 
   const LegalDocument({
     required this.id,
@@ -23,6 +24,7 @@ class LegalDocument {
     required this.keywords,
     this.isBookmarked = false,
     this.lastViewed,
+    this.sectionNumber,
   });
 
   LegalDocument copyWith({
@@ -35,7 +37,9 @@ class LegalDocument {
     List<String>? keywords,
     bool? isBookmarked,
     DateTime? lastViewed,
+    String? sectionNumber,
     bool clearLastViewed = false,
+    bool clearSectionNumber = false,
   }) {
     return LegalDocument(
       id: id ?? this.id,
@@ -47,6 +51,7 @@ class LegalDocument {
       keywords: keywords ?? this.keywords,
       isBookmarked: isBookmarked ?? this.isBookmarked,
       lastViewed: clearLastViewed ? null : (lastViewed ?? this.lastViewed),
+      sectionNumber: clearSectionNumber ? null : (sectionNumber ?? this.sectionNumber),
     );
   }
 
@@ -68,6 +73,7 @@ class LegalDocumentAdapter extends TypeAdapter<LegalDocument> {
 
   @override
   LegalDocument read(BinaryReader reader) {
+    final version = reader.readByte();
     final id = reader.readString();
     final titleEn = reader.readString();
     final titleNp = reader.readString();
@@ -80,6 +86,14 @@ class LegalDocumentAdapter extends TypeAdapter<LegalDocument> {
     final lastViewed =
         hasLastViewed ? DateTime.fromMillisecondsSinceEpoch(reader.readInt()) : null;
 
+    String? sectionNumber;
+    if (version >= 2) {
+      final hasSectionNumber = reader.readBool();
+      if (hasSectionNumber) {
+        sectionNumber = reader.readString();
+      }
+    }
+
     return LegalDocument(
       id: id,
       titleEn: titleEn,
@@ -90,11 +104,13 @@ class LegalDocumentAdapter extends TypeAdapter<LegalDocument> {
       keywords: keywords ?? [],
       isBookmarked: isBookmarked,
       lastViewed: lastViewed,
+      sectionNumber: sectionNumber,
     );
   }
 
   @override
   void write(BinaryWriter writer, LegalDocument obj) {
+    writer.writeByte(2);
     writer.writeString(obj.id);
     writer.writeString(obj.titleEn);
     writer.writeString(obj.titleNp);
@@ -106,6 +122,10 @@ class LegalDocumentAdapter extends TypeAdapter<LegalDocument> {
     writer.writeBool(obj.lastViewed != null);
     if (obj.lastViewed != null) {
       writer.writeInt(obj.lastViewed!.millisecondsSinceEpoch);
+    }
+    writer.writeBool(obj.sectionNumber != null);
+    if (obj.sectionNumber != null) {
+      writer.writeString(obj.sectionNumber!);
     }
   }
 }

@@ -457,7 +457,7 @@ class _DayEventsList extends StatelessWidget {
                     GestureDetector(
                       onTap: () => context.pushNamed(
                         RouteNames.hearingDetail,
-                        extra: event.id,
+                        extra: event,
                       ),
                       child: Row(
                         children: [
@@ -679,35 +679,42 @@ class _AgendaEventCard extends StatelessWidget {
         margin: EdgeInsets.zero,
         child: Row(
           children: [
-            Container(
-              width: 4,
-              height: 48,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            GestureDetector(
+              onTap: () => context.pushNamed(RouteNames.hearingDetail, extra: event),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    event.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: textColor,
+                  Container(
+                    width: 4,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    event.caseName,
-                    style: TextStyle(fontSize: 13, color: subtitleColor),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        event.caseName,
+                        style: TextStyle(fontSize: 13, color: subtitleColor),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+            const Spacer(),
             GestureDetector(
               onTap: onDelete,
               child: Container(
