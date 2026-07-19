@@ -22,3 +22,7 @@
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application
 -keep public class * extends android.app.Service
+
+# Syncfusion PDF — keep all native classes used via FFI/Dart
+-keep class com.syncfusion.** { *; }
+-keep class syncfusion.** { *; }

@@ -37,11 +37,13 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3 ── Set up Flutter stable (latest)
+      # 3 ── Set up Flutter 3.22.2 (stable, pinned to match build.yml)
       - name: Setup Flutter
         uses: subosito/flutter-action@v2.16.0
         with:
           channel: stable
+          flutter-version: '3.22.2'
+          cache: true
 
       # 4 ── Install dependencies
       - name: Install Dependencies
@@ -58,13 +60,19 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
       # 7 ── Create local.properties for version info
+      #     The flutter.sdk property is set by the flutter-action step above.
       - name: Create local.properties
         run: |
           echo "flutter.versionCode=${{ github.run_number }}" >> android/local.properties
           echo "flutter.versionName=${{ github.ref_name }}" >> android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
+          # Flutter 3.22 sets compileSdk to 34 by default; keep it stable
+          echo "flutter.compileSdk=34" >> android/local.properties
+          echo "flutter.minSdk=24" >> android/local.properties
+          echo "flutter.targetSdk=34" >> android/local.properties
 
       # 8 ── Create key.properties for signing
+      #     The storeFile path is relative to the android/ directory.
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOF
