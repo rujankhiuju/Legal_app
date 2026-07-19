@@ -1,7 +1,7 @@
 name: legal_assistant
 description: A legal companion app with document scanning, case notes, calendar, and reminders.
 publish_to: 'none'
-version: 2.0.0+2
+version: 2.1.0+3
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
