@@ -94,12 +94,12 @@ class _RemindersBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (reminders.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle_outline_rounded, size: 72, color: AppColors.textSecondary),
-            SizedBox(height: 16),
+            const Icon(Icons.check_circle_outline_rounded, size: 72, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
             Text('All caught up!', style: AppTextStyles.body),
           ],
         ),

@@ -551,13 +551,13 @@ class _AgendaList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (eventsMap.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(40),
+      return Padding(
+        padding: const EdgeInsets.all(40),
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.event_busy_rounded, size: 64, color: AppColors.textSecondary),
-              SizedBox(height: 16),
+              const Icon(Icons.event_busy_rounded, size: 64, color: AppColors.textSecondary),
+              const SizedBox(height: 16),
               Text('No events scheduled', style: AppTextStyles.body),
             ],
           ),

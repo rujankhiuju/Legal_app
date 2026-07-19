@@ -143,12 +143,12 @@ class _NotesList extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (pinned.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
-                  Icon(Icons.push_pin_rounded, size: 16, color: AppColors.accentPrimary),
-                  SizedBox(width: 6),
+                  const Icon(Icons.push_pin_rounded, size: 16, color: AppColors.accentPrimary),
+                  const SizedBox(width: 6),
                   Text('Pinned', style: AppTextStyles.subtitle),
                 ],
               ),
@@ -158,12 +158,12 @@ class _NotesList extends ConsumerWidget {
             else
               ...pinned.map((note) => _NoteCard(note: note, onTap: () => onOpenEditor(note))),
           ],
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                Icon(Icons.history_rounded, size: 16, color: AppColors.accentPrimary),
-                SizedBox(width: 6),
+                const Icon(Icons.history_rounded, size: 16, color: AppColors.accentPrimary),
+                const SizedBox(width: 6),
                 Text('Recent Notes', style: AppTextStyles.subtitle),
               ],
             ),

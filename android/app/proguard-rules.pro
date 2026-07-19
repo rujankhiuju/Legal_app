@@ -26,3 +26,7 @@
 # Syncfusion PDF — keep all native classes used via FFI/Dart
 -keep class com.syncfusion.** { *; }
 -keep class syncfusion.** { *; }
+
+# Play Core — deferred component loading
+-dontwarn com.google.android.play.core.tasks.**
+-keep class com.google.android.play.core.** { *; }

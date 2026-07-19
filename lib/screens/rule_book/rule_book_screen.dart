@@ -218,12 +218,12 @@ class _DocumentList extends ConsumerWidget {
     final filtered = lawState.filteredDocuments;
 
     if (lawState.isLoading && lawState.documents.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.accentPrimary),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: AppColors.accentPrimary),
+            const SizedBox(height: 16),
             Text('Loading legal documents...', style: AppTextStyles.body),
           ],
         ),
@@ -239,7 +239,7 @@ class _DocumentList extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline_rounded, size: 64, color: AppColors.textSecondary),
               const SizedBox(height: 16),
-              const Text('Failed to load documents', style: AppTextStyles.subtitle),
+              Text('Failed to load documents', style: AppTextStyles.subtitle),
               const SizedBox(height: 8),
               Text(
                 lawState.error.toString(),
@@ -290,12 +290,12 @@ class _DocumentList extends ConsumerWidget {
     }
 
     if (grouped.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded, size: 64, color: AppColors.textSecondary),
-            SizedBox(height: 16),
+            const Icon(Icons.search_off_rounded, size: 64, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
             Text('No documents available', style: AppTextStyles.body),
           ],
         ),
@@ -374,12 +374,12 @@ class _RecentSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
-                  Icon(Icons.history_rounded, size: 18, color: AppColors.accentPrimary),
-                  SizedBox(width: 8),
+                  const Icon(Icons.history_rounded, size: 18, color: AppColors.accentPrimary),
+                  const SizedBox(width: 8),
                   Text('Recently Viewed', style: AppTextStyles.subtitle),
                 ],
               ),
